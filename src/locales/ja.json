@@ -1,0 +1,59 @@
+{
+  "panel": {
+    "loading": "読み込み中…",
+    "never": "データなし",
+    "noToken": "無料の aqicn トークンを設定してください。",
+    "noTokenHint": "データはあなたのトークンで aqicn.org から直接取得します。当方のサーバーは経由しません。",
+    "updated": "観測所の測定値 {{time}}",
+    "dominant": "主な汚染物質",
+    "sources": "データ提供元",
+    "stale": "前回の測定値を表示しています（最新の更新に失敗）。",
+    "refresh": "更新",
+    "settings": "設定"
+  },
+  "aqi": {
+    "good": "良い",
+    "moderate": "普通",
+    "sensitive": "敏感な人は注意",
+    "unhealthy": "不健康",
+    "veryUnhealthy": "非常に不健康",
+    "hazardous": "危険",
+    "unknown": "データなし"
+  },
+  "pollutants": {
+    "pm25": "PM2.5",
+    "pm10": "PM10",
+    "o3": "O₃",
+    "no2": "NO₂",
+    "so2": "SO₂",
+    "co": "CO",
+    "t": "気温",
+    "h": "湿度",
+    "p": "気圧",
+    "w": "風速"
+  },
+  "settings": {
+    "open": "設定を開く",
+    "title": "設定",
+    "back": "戻る",
+    "token": "aqicn API トークン",
+    "tokenPlaceholder": "トークンを貼り付け",
+    "tokenHint": "無料です。取得はこちら：",
+    "tokenNeeded": "トークンが必要です。",
+    "location": "観測地点",
+    "locHere": "自動（IP から判定）",
+    "locCity": "都市・観測所を指定",
+    "cityPlaceholder": "例：東京、新宿",
+    "search": "検索",
+    "searching": "検索中…",
+    "searchHint": "「検索」で観測所を探して選択してください。",
+    "locationNeeded": "都市名を入力するか観測所を選んでください。",
+    "refresh": "更新間隔",
+    "minutes": "{{n}} 分",
+    "language": "言語",
+    "langAuto": "システムに合わせる",
+    "save": "保存",
+    "saving": "保存中…",
+    "pickedFallback": "選択した観測所"
+  }
+}

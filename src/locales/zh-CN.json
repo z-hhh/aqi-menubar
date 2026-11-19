@@ -1,0 +1,59 @@
+{
+  "panel": {
+    "loading": "加载中…",
+    "never": "暂无读数",
+    "noToken": "先填入免费的 aqicn token 才能开始。",
+    "noTokenHint": "数据用你自己的 token 直接从 aqicn.org 拉取，不经过我们的任何服务器。",
+    "updated": "站点读数 {{time}}",
+    "dominant": "首要污染物",
+    "sources": "数据来源",
+    "stale": "显示的是上一次读数——最近一次刷新失败。",
+    "refresh": "刷新",
+    "settings": "设置"
+  },
+  "aqi": {
+    "good": "优",
+    "moderate": "中等",
+    "sensitive": "对敏感人群不健康",
+    "unhealthy": "不健康",
+    "veryUnhealthy": "非常不健康",
+    "hazardous": "危险",
+    "unknown": "暂无读数"
+  },
+  "pollutants": {
+    "pm25": "PM2.5",
+    "pm10": "PM10",
+    "o3": "O₃",
+    "no2": "NO₂",
+    "so2": "SO₂",
+    "co": "CO",
+    "t": "气温",
+    "h": "湿度",
+    "p": "气压",
+    "w": "风速"
+  },
+  "settings": {
+    "open": "去设置",
+    "title": "设置",
+    "back": "返回",
+    "token": "aqicn API token",
+    "tokenPlaceholder": "粘贴你的 token",
+    "tokenHint": "免费、即时申请，在这里获取：",
+    "tokenNeeded": "必须填写 token。",
+    "location": "监测位置",
+    "locHere": "自动（按 IP）",
+    "locCity": "指定城市或站点",
+    "cityPlaceholder": "例如 上海，或 静安",
+    "search": "搜索",
+    "searching": "搜索中…",
+    "searchHint": "点“搜索”查找监测站，然后选一个。",
+    "locationNeeded": "请填写城市或选择一个站点。",
+    "refresh": "刷新间隔",
+    "minutes": "{{n}} 分钟",
+    "language": "语言",
+    "langAuto": "跟随系统",
+    "save": "保存",
+    "saving": "保存中…",
+    "pickedFallback": "已选站点"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "panel": {
+    "loading": "Loading…",
+    "never": "No reading yet",
+    "noToken": "Add your free aqicn token to start.",
+    "noTokenHint": "Readings come straight from aqicn.org with your own token. Nothing passes through a server of ours.",
+    "updated": "Station reading {{time}}",
+    "dominant": "Main pollutant",
+    "sources": "Data sources",
+    "stale": "Showing the last reading — the latest refresh failed.",
+    "refresh": "Refresh",
+    "settings": "Settings"
+  },
+  "aqi": {
+    "good": "Good",
+    "moderate": "Moderate",
+    "sensitive": "Unhealthy for sensitive groups",
+    "unhealthy": "Unhealthy",
+    "veryUnhealthy": "Very unhealthy",
+    "hazardous": "Hazardous",
+    "unknown": "No reading"
+  },
+  "pollutants": {
+    "pm25": "PM2.5",
+    "pm10": "PM10",
+    "o3": "O₃",
+    "no2": "NO₂",
+    "so2": "SO₂",
+    "co": "CO",
+    "t": "Temperature",
+    "h": "Humidity",
+    "p": "Pressure",
+    "w": "Wind"
+  },
+  "settings": {
+    "open": "Open settings",
+    "title": "Settings",
+    "back": "Back",
+    "token": "aqicn API token",
+    "tokenPlaceholder": "Paste your token",
+    "tokenHint": "Free and instant. Get one at",
+    "tokenNeeded": "A token is required.",
+    "location": "Location",
+    "locHere": "Automatic (by IP)",
+    "locCity": "City or station",
+    "cityPlaceholder": "e.g. Shanghai, or 静安",
+    "search": "Search",
+    "searching": "Searching…",
+    "searchHint": "Press Search to look up stations, then pick one.",
+    "locationNeeded": "Enter a city or pick a station.",
+    "refresh": "Refresh every",
+    "minutes": "{{n}} min",
+    "language": "Language",
+    "langAuto": "Match system",
+    "save": "Save",
+    "saving": "Saving…",
+    "pickedFallback": "Selected station"
+  }
+}
