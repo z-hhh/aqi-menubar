@@ -6,6 +6,7 @@ const params = new URLSearchParams(window.location.search);
 const lang = params.get("lang") ?? "auto";
 const mode = params.get("mock") ?? "data";
 const aqiParam = params.get("aqi");
+const updateParam = params.get("update");
 
 const ATTRIBUTIONS = [
   {
@@ -26,18 +27,41 @@ function baseConfig(): Config {
     location: { kind: "here" },
     refreshMinutes: 30,
     language: lang,
+    tray: {
+      metric: (params.get("metric") as "aqi" | "pm25" | "none") ?? "aqi",
+      showLabel: params.get("label") === "1",
+      showStation: params.get("station") === "1",
+      showIcon: params.get("dot") !== "0",
+    },
   };
+}
+
+function updateInfo() {
+  return updateParam
+    ? { version: updateParam, currentVersion: "0.1.0", notes: "Fixes and a smaller tray title." }
+    : null;
 }
 
 export function sampleState(): AppState {
   if (mode === "empty") {
-    return { config: baseConfig(), snapshot: null, error: null, resolvedLanguage: "en" };
+    return {
+      config: baseConfig(),
+      snapshot: null,
+      error: null,
+      resolvedLanguage: "en",
+      platform: "macos",
+      update: null,
+      installing: false,
+    };
   }
   const aqi = aqiParam ? Number(aqiParam) : 50;
   return {
     config: baseConfig(),
     resolvedLanguage: "en",
     error: mode === "error" ? "network-error: connection timed out" : null,
+    platform: "macos",
+    update: updateInfo(),
+    installing: false,
     snapshot: {
       aqi,
       station: "Shanghai (上海)",

@@ -4,11 +4,22 @@ export type Location =
   | { kind: "station"; uid: number }
   | { kind: "geo"; lat: number; lon: number };
 
+export type TrayMetric = "aqi" | "pm25" | "none";
+
+/** Mirrors `config::TrayDisplay` on the Rust side. */
+export interface TrayDisplay {
+  metric: TrayMetric;
+  showLabel: boolean;
+  showStation: boolean;
+  showIcon: boolean;
+}
+
 export interface Config {
   token: string;
   location: Location;
   refreshMinutes: number;
   language: string;
+  tray: TrayDisplay;
 }
 
 export interface Pollutant {
@@ -33,11 +44,21 @@ export interface Snapshot {
   fetchedAt: number;
 }
 
+export interface UpdateInfo {
+  version: string;
+  currentVersion: string;
+  notes: string | null;
+}
+
 export interface AppState {
   config: Config;
   snapshot: Snapshot | null;
   error: string | null;
   resolvedLanguage: string;
+  /** "macos" | "windows" | "linux" */
+  platform: string;
+  update: UpdateInfo | null;
+  installing: boolean;
 }
 
 export interface StationHit {

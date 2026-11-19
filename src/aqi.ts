@@ -1,4 +1,4 @@
-import type { Snapshot } from "./types";
+import type { Snapshot, TrayDisplay } from "./types";
 
 export type Category =
   | "good"
@@ -73,4 +73,55 @@ export function readingTime(snapshot: Snapshot | null, locale: string): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function pollutantValue(snapshot: Snapshot | null, code: string): number | null {
+  const hit = snapshot?.pollutants.find((p) => p.code === code);
+  return hit && Number.isFinite(hit.value) && hit.value >= 0 ? hit.value : null;
+}
+
+function truncate(value: string, max: number): string {
+  const chars = Array.from(value);
+  return chars.length <= max ? value : `${chars.slice(0, max - 1).join("").trimEnd()}…`;
+}
+
+function metricText(
+  snapshot: Snapshot | null,
+  metric: TrayDisplay["metric"],
+): { value: string; label: string } | null {
+  const aqi =
+    snapshot?.aqi !== null && snapshot?.aqi !== undefined && snapshot.aqi >= 0
+      ? snapshot.aqi
+      : null;
+  if (metric === "pm25") {
+    const pm25 = pollutantValue(snapshot, "pm25");
+    if (pm25 !== null) return { value: String(Math.round(pm25)), label: "PM2.5" };
+  }
+  if (metric === "none") return null;
+  return aqi === null ? null : { value: String(aqi), label: "AQI" };
+}
+
+/**
+ * The menu bar title a display setting produces, given a reading. Mirrors
+ * `tray::texts` in Rust — the two must agree; used for the live preview.
+ */
+export function trayText(snapshot: Snapshot | null, display: TrayDisplay): string {
+  const station = truncate((snapshot?.station ?? "").trim(), 18);
+  const hit = metricText(snapshot, display.metric);
+
+  if (!hit) {
+    const aqi =
+      snapshot?.aqi !== null && snapshot?.aqi !== undefined && snapshot.aqi >= 0
+        ? String(snapshot.aqi)
+        : null;
+    // Icon-only: nothing beside the dot while there is a reading; a dash is
+    // clearer than a bare grey dot when there is none.
+    if (aqi === null) return "–";
+    if (display.metric === "none" && display.showIcon) return "";
+    return aqi;
+  }
+
+  let text = display.showLabel ? `${hit.label} ${hit.value}` : hit.value;
+  if (display.showStation && station) text += ` · ${station}`;
+  return text;
 }

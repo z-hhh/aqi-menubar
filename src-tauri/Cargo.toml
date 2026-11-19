@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Air Quality Index in your menu bar or system tray, powered by aqicn.org"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/"
+repository = "https://github.com/z-hhh/aqi-menubar"
 
 [lib]
 name = "aqi_menubar_lib"
@@ -17,6 +17,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
 tauri-plugin-positioner = { version = "2", features = ["tray-icon"] }
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

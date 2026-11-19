@@ -11,6 +11,7 @@ type View = "panel" | "settings";
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [view, setView] = useState<View>("panel");
+  const [focusToken, setFocusToken] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -29,9 +30,18 @@ export default function App() {
   useEffect(() => {
     const unlisteners: Array<() => void> = [];
     void bridge.onState((next) => setState(next)).then((un) => unlisteners.push(un));
-    void bridge.onOpenSettings(() => setView("settings")).then((un) =>
-      unlisteners.push(un),
-    );
+    void bridge.onOpenSettings(() => setView("settings")).then((un) => unlisteners.push(un));
+    void bridge
+      .onUpdate((update) => setState((prev) => (prev ? { ...prev, update } : prev)))
+      .then((un) => unlisteners.push(un));
+    // The tray menu's "Check for updates…" runs the check in the background;
+    // bring the panel forward so the result is visible when it lands.
+    void bridge
+      .onCheckUpdates(() => {
+        setView("panel");
+        void bridge.checkUpdate();
+      })
+      .then((un) => unlisteners.push(un));
     return () => unlisteners.forEach((un) => un());
   }, []);
 
@@ -54,15 +64,26 @@ export default function App() {
     <div className="shell">
       {view === "settings" ? (
         <Settings
-          initial={state.config}
+          state={state}
+          focusToken={focusToken}
           onSaved={(next) => {
             setState(next);
+            setFocusToken(false);
             setView("panel");
           }}
-          onBack={() => setView("panel")}
+          onBack={() => {
+            setFocusToken(false);
+            setView("panel");
+          }}
         />
       ) : (
-        <Panel state={state} onOpenSettings={() => setView("settings")} />
+        <Panel
+          state={state}
+          onOpenSettings={(wantsToken) => {
+            setFocusToken(Boolean(wantsToken));
+            setView("settings");
+          }}
+        />
       )}
     </div>
   );

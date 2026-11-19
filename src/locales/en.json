@@ -2,14 +2,22 @@
   "panel": {
     "loading": "Loading…",
     "never": "No reading yet",
-    "noToken": "Add your free aqicn token to start.",
-    "noTokenHint": "Readings come straight from aqicn.org with your own token. Nothing passes through a server of ours.",
     "updated": "Station reading {{time}}",
     "dominant": "Main pollutant",
     "sources": "Data sources",
     "stale": "Showing the last reading — the latest refresh failed.",
     "refresh": "Refresh",
     "settings": "Settings"
+  },
+  "onboard": {
+    "title": "Set up in a minute",
+    "subtitle": "AQI Menubar reads the air where you are, with your own free aqicn token.",
+    "step1": "Open the aqicn token page and enter your email.",
+    "step2": "The token arrives by email straight away — no account needed.",
+    "step3": "Paste it in Settings. Readings start on their own.",
+    "getToken": "Get a free token",
+    "haveToken": "I already have a token",
+    "footnote": "Free and open source. The token stays on this computer and is sent only to aqicn.org."
   },
   "aqi": {
     "good": "Good",
@@ -33,12 +41,12 @@
     "w": "Wind"
   },
   "settings": {
-    "open": "Open settings",
     "title": "Settings",
     "back": "Back",
     "token": "aqicn API token",
     "tokenPlaceholder": "Paste your token",
     "tokenHint": "Free and instant. Get one at",
+    "tokenGuide": "No token yet? It's free and takes about ten seconds — the token is emailed to you.",
     "tokenNeeded": "A token is required.",
     "location": "Location",
     "locHere": "Automatic (by IP)",
@@ -48,12 +56,36 @@
     "searching": "Searching…",
     "searchHint": "Press Search to look up stations, then pick one.",
     "locationNeeded": "Enter a city or pick a station.",
+    "tray": "Menu bar",
+    "trayMetric": "Show in the menu bar",
+    "trayAqi": "AQI",
+    "trayPm25": "PM2.5",
+    "trayIconOnly": "Icon only",
+    "trayLabel": "Label the number (AQI 51)",
+    "trayStation": "Show the station name",
+    "trayDot": "Colour dot",
+    "trayHint": "The menu bar changes as you toggle these.",
+    "trayWindowsHint": "Windows shows only an icon in the notification area, so the number lives in the tooltip.",
+    "trayPreview": "Menu bar preview",
     "refresh": "Refresh every",
     "minutes": "{{n}} min",
     "language": "Language",
     "langAuto": "Match system",
+    "updates": "Updates",
     "save": "Save",
     "saving": "Saving…",
     "pickedFallback": "Selected station"
+  },
+  "update": {
+    "check": "Check for updates",
+    "checking": "Checking…",
+    "upToDate": "You're on the latest version.",
+    "autoHint": "Checked automatically every few hours.",
+    "available": "Version {{version}} is available.",
+    "note": "Installs in place and restarts the app.",
+    "install": "Install",
+    "installing": "Installing…",
+    "later": "Later",
+    "failed": "Update failed: {{error}}"
   }
 }

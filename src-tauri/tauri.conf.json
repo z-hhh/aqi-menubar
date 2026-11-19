@@ -16,7 +16,7 @@
         "label": "main",
         "title": "AQI Menubar",
         "width": 340,
-        "height": 440,
+        "height": 520,
         "resizable": false,
         "decorations": false,
         "transparent": false,
@@ -44,6 +44,17 @@
     "category": "Utility",
     "shortDescription": "Air quality in your menu bar",
     "longDescription": "Shows the live Air Quality Index from aqicn.org in the macOS menu bar or the Windows system tray. Bring your own aqicn API token; no server, no telemetry.",
-    "copyright": "MIT licensed"
+    "copyright": "MIT licensed",
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/z-hhh/aqi-menubar/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlENzg4MjE2REMzNkQxMzIKUldReTBUYmNGb0o0blU2SVdTNFNGV2lPaGdyaXF3dytBb0QxTWJ6anUwVndEWm9zMEVmUThTZVgK"
+    }
   }
 }

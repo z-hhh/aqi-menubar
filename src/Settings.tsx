@@ -1,19 +1,24 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
+import { categoryColor, categoryOf, trayText } from "./aqi";
 import { bridge } from "./bridge";
-import type { AppState, Config, Location, StationHit } from "./types";
+import { TOKEN_URL } from "./Panel";
+import type { AppState, Location, StationHit, TrayDisplay } from "./types";
 
 interface Props {
-  initial: Config;
+  state: AppState;
+  /** Open with the token field focused (the onboarding "I have a token" path). */
+  focusToken?: boolean;
   onSaved: (next: AppState) => void;
   onBack: () => void;
 }
 
-const TOKEN_URL = "https://aqicn.org/data-platform/token/";
-
-export default function Settings({ initial, onSaved, onBack }: Props) {
+export default function Settings({ state, focusToken = false, onSaved, onBack }: Props) {
   const { t } = useTranslation();
+  const initial = state.config;
+  const isWindows = state.platform === "windows";
+
   const initialMode = initial.location.kind === "city" || initial.location.kind === "station"
     ? "city"
     : "here";
@@ -31,11 +36,36 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
   const [searching, setSearching] = useState(false);
   const [refresh, setRefresh] = useState(initial.refreshMinutes);
   const [language, setLanguage] = useState(initial.language);
+  const [tray, setTray] = useState<TrayDisplay>(initial.tray);
   const [picked, setPicked] = useState<string | null>(
     initial.location.kind === "station" ? t("settings.pickedFallback") : null,
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState<"idle" | "busy" | "none">("idle");
+
+  const tokenRef = useRef<HTMLInputElement>(null);
+  /** Set once the form is saved, so leaving does not undo the new setting. */
+  const committed = useRef(false);
+
+  useEffect(() => {
+    if (focusToken) tokenRef.current?.focus();
+  }, [focusToken]);
+
+  // Changing the display options shows up in the real menu bar immediately;
+  // leaving without saving puts the saved setting back.
+  useEffect(() => {
+    return () => {
+      if (!committed.current) void bridge.previewTray(initial.tray);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function changeTray(patch: Partial<TrayDisplay>) {
+    const next = { ...tray, ...patch };
+    setTray(next);
+    void bridge.previewTray(next);
+  }
 
   async function search() {
     const term = query.trim();
@@ -54,6 +84,7 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
   async function save() {
     if (!token.trim()) {
       setError(t("settings.tokenNeeded"));
+      tokenRef.current?.focus();
       return;
     }
     const location: Location =
@@ -70,7 +101,9 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
         location,
         refreshMinutes: refresh,
         language,
+        tray,
       });
+      committed.current = true;
       onSaved(next);
     } catch (err) {
       setError(String(err));
@@ -78,6 +111,15 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
       setBusy(false);
     }
   }
+
+  async function checkForUpdates() {
+    setChecked("busy");
+    const found = await bridge.checkUpdate();
+    setChecked(found ? "idle" : "none");
+  }
+
+  const category = categoryOf(state.snapshot?.aqi ?? null);
+  const preview = trayText(state.snapshot, tray);
 
   return (
     <div className="panel settings">
@@ -89,12 +131,22 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
         <span className="bar-spacer" />
       </header>
 
+      {!token.trim() && (
+        <div className="callout">
+          <p className="callout-text">{t("settings.tokenGuide")}</p>
+          <button type="button" className="primary small" onClick={() => open(TOKEN_URL)}>
+            {t("onboard.getToken")} ↗
+          </button>
+        </div>
+      )}
+
       <div className="field">
         <label className="label" htmlFor="token">
           {t("settings.token")}
         </label>
         <input
           id="token"
+          ref={tokenRef}
           type="text"
           aria-describedby="token-hint"
           value={token}
@@ -106,7 +158,7 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
         />
         <span className="hint" id="token-hint">
           {t("settings.tokenHint")}{" "}
-          <button type="button" className="link inline" onClick={() => openUrl(TOKEN_URL)}>
+          <button type="button" className="link inline" onClick={() => open(TOKEN_URL)}>
             aqicn.org
           </button>
         </span>
@@ -135,6 +187,7 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
             <div className="row">
               <input
                 type="text"
+                aria-label={t("settings.cityPlaceholder")}
                 value={query}
                 placeholder={t("settings.cityPlaceholder")}
                 onChange={(e) => {
@@ -169,14 +222,65 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
                 ))}
               </ul>
             )}
-            {picked && (
-              <span className="hint picked">✓ {picked}</span>
-            )}
+            {picked && <span className="hint picked">✓ {picked}</span>}
             {!searching && hits.length === 0 && query.trim() !== "" && (
               <span className="hint">{t("settings.searchHint")}</span>
             )}
           </>
         )}
+      </div>
+
+      <div className="field">
+        <span className="label">{t("settings.tray")}</span>
+
+        <div className="tray-preview" aria-live="polite" aria-label={t("settings.trayPreview")}>
+          {tray.showIcon && (
+            <span
+              className="tray-dot"
+              style={{ background: categoryColor[category] }}
+              aria-hidden="true"
+            />
+          )}
+          {preview && <span className="tray-text">{preview}</span>}
+        </div>
+
+        <select
+          aria-label={t("settings.trayMetric")}
+          value={tray.metric}
+          onChange={(e) => changeTray({ metric: e.target.value as TrayDisplay["metric"] })}
+        >
+          <option value="aqi">{t("settings.trayAqi")}</option>
+          <option value="pm25">{t("settings.trayPm25")}</option>
+          {!isWindows && <option value="none">{t("settings.trayIconOnly")}</option>}
+        </select>
+
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={tray.showLabel}
+            onChange={(e) => changeTray({ showLabel: e.target.checked })}
+          />
+          <span>{t("settings.trayLabel")}</span>
+        </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={tray.showStation}
+            onChange={(e) => changeTray({ showStation: e.target.checked })}
+          />
+          <span>{t("settings.trayStation")}</span>
+        </label>
+        {!isWindows && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={tray.showIcon}
+              onChange={(e) => changeTray({ showIcon: e.target.checked })}
+            />
+            <span>{t("settings.trayDot")}</span>
+          </label>
+        )}
+        <span className="hint">{isWindows ? t("settings.trayWindowsHint") : t("settings.trayHint")}</span>
       </div>
 
       <div className="field">
@@ -208,6 +312,27 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
         </select>
       </div>
 
+      <div className="field">
+        <span className="label">{t("settings.updates")}</span>
+        <div className="row">
+          <button
+            type="button"
+            className="ghost"
+            disabled={checked === "busy"}
+            onClick={() => void checkForUpdates()}
+          >
+            {checked === "busy" ? t("update.checking") : t("update.check")}
+          </button>
+        </div>
+        <span className="hint">
+          {state.update
+            ? t("update.available", { version: state.update.version })
+            : checked === "none"
+              ? t("update.upToDate")
+              : t("update.autoHint")}
+        </span>
+      </div>
+
       {error && <p className="error">{error}</p>}
 
       <button type="button" className="primary wide" disabled={busy} onClick={() => void save()}>
@@ -215,4 +340,8 @@ export default function Settings({ initial, onSaved, onBack }: Props) {
       </button>
     </div>
   );
+}
+
+function open(url: string) {
+  void openUrl(url).catch(() => undefined);
 }

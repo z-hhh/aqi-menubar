@@ -2,14 +2,22 @@
   "panel": {
     "loading": "加载中…",
     "never": "暂无读数",
-    "noToken": "先填入免费的 aqicn token 才能开始。",
-    "noTokenHint": "数据用你自己的 token 直接从 aqicn.org 拉取，不经过我们的任何服务器。",
     "updated": "站点读数 {{time}}",
     "dominant": "首要污染物",
     "sources": "数据来源",
     "stale": "显示的是上一次读数——最近一次刷新失败。",
     "refresh": "刷新",
     "settings": "设置"
+  },
+  "onboard": {
+    "title": "一分钟就能用上",
+    "subtitle": "用你自己的免费 aqicn token，读取你所在位置的空气质量。",
+    "step1": "打开 aqicn 的 token 页面，填入你的邮箱。",
+    "step2": "token 会立刻发到你的邮箱，不需要注册账号。",
+    "step3": "在设置里粘贴，读数会自动开始。",
+    "getToken": "获取免费 token",
+    "haveToken": "我已经有 token",
+    "footnote": "免费开源。token 只保存在本机，也只发给 aqicn.org。"
   },
   "aqi": {
     "good": "优",
@@ -33,12 +41,12 @@
     "w": "风速"
   },
   "settings": {
-    "open": "去设置",
     "title": "设置",
     "back": "返回",
     "token": "aqicn API token",
     "tokenPlaceholder": "粘贴你的 token",
     "tokenHint": "免费、即时申请，在这里获取：",
+    "tokenGuide": "还没有 token？免费申请，十秒搞定，token 直接发到你的邮箱。",
     "tokenNeeded": "必须填写 token。",
     "location": "监测位置",
     "locHere": "自动（按 IP）",
@@ -48,12 +56,36 @@
     "searching": "搜索中…",
     "searchHint": "点“搜索”查找监测站，然后选一个。",
     "locationNeeded": "请填写城市或选择一个站点。",
+    "tray": "菜单栏",
+    "trayMetric": "菜单栏显示",
+    "trayAqi": "AQI 指数",
+    "trayPm25": "PM2.5",
+    "trayIconOnly": "只显示图标",
+    "trayLabel": "数值前带名称（AQI 51）",
+    "trayStation": "显示站点名",
+    "trayDot": "彩色圆点",
+    "trayHint": "切换后菜单栏会立刻变化。",
+    "trayWindowsHint": "Windows 通知区只能显示图标，数字放在悬浮提示里。",
+    "trayPreview": "菜单栏预览",
     "refresh": "刷新间隔",
     "minutes": "{{n}} 分钟",
     "language": "语言",
     "langAuto": "跟随系统",
+    "updates": "更新",
     "save": "保存",
     "saving": "保存中…",
     "pickedFallback": "已选站点"
+  },
+  "update": {
+    "check": "检查更新",
+    "checking": "检查中…",
+    "upToDate": "已是最新版本。",
+    "autoHint": "每隔几小时自动检查一次。",
+    "available": "新版本 {{version}} 可用。",
+    "note": "就地安装，完成后自动重启。",
+    "install": "安装",
+    "installing": "安装中…",
+    "later": "稍后",
+    "failed": "更新失败：{{error}}"
   }
 }

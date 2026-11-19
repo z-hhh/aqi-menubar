@@ -17,6 +17,35 @@ pub enum Location {
     Geo { lat: f64, lon: f64 },
 }
 
+/// What the menu bar / tray shows. See `tray::texts` for the composition rules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TrayDisplay {
+    /// Which number to show: "aqi" | "pm25" | "none".
+    /// `none` keeps only the colour dot, for people who want an icon and
+    /// nothing else in the menu bar.
+    pub metric: String,
+    /// Prefix the number with its name: "AQI 51" rather than "51".
+    pub show_label: bool,
+    /// Append the station name: "51 · Shanghai (上海)".
+    pub show_station: bool,
+    /// A small EPA-coloured dot before the text (macOS). Windows cannot show
+    /// text in the notification area at all, so there the dot is the icon and
+    /// this flag is ignored.
+    pub show_icon: bool,
+}
+
+impl Default for TrayDisplay {
+    fn default() -> Self {
+        Self {
+            metric: "aqi".to_string(),
+            show_label: false,
+            show_station: false,
+            show_icon: true,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Config {
@@ -25,6 +54,7 @@ pub struct Config {
     pub refresh_minutes: u32,
     /// "auto" | "en" | "zh-CN" | "ja"
     pub language: String,
+    pub tray: TrayDisplay,
 }
 
 impl Default for Config {
@@ -34,6 +64,7 @@ impl Default for Config {
             location: Location::Here,
             refresh_minutes: 30,
             language: "auto".to_string(),
+            tray: TrayDisplay::default(),
         }
     }
 }
@@ -97,5 +128,39 @@ impl Config {
         // aqicn's own stations update hourly; polling faster than 5 min only
         // burns quota, so clamp to that floor.
         (self.refresh_minutes.max(5) as u64) * 60
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn older_configs_without_a_tray_block_get_the_defaults() {
+        let json = r#"{"token":"abc","location":{"kind":"here"},"refreshMinutes":30,"language":"en"}"#;
+        let cfg: Config = serde_json::from_str(json).unwrap();
+        assert_eq!(cfg.tray.metric, "aqi");
+        assert!(cfg.tray.show_icon);
+        assert!(!cfg.tray.show_station);
+        assert_eq!(cfg.token, "abc");
+    }
+
+    #[test]
+    fn tray_display_round_trips_as_camel_case() {
+        let cfg = Config {
+            tray: TrayDisplay {
+                metric: "pm25".into(),
+                show_label: true,
+                show_station: true,
+                show_icon: false,
+            },
+            ..Config::default()
+        };
+        let json = serde_json::to_string(&cfg).unwrap();
+        assert!(json.contains("\"showLabel\":true"), "{json}");
+        assert!(json.contains("\"showStation\":true"), "{json}");
+        let back: Config = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.tray.metric, "pm25");
+        assert!(!back.tray.show_icon);
     }
 }

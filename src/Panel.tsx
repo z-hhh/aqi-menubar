@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
 import { categoryColor, categoryInk, categoryOf, formatTemp, readingTime, unitOf } from "./aqi";
@@ -5,39 +6,115 @@ import { bridge } from "./bridge";
 import type { AppState, Pollutant } from "./types";
 
 const MAIN_CODES = ["pm25", "pm10", "o3", "no2", "so2", "co"];
+export const TOKEN_URL = "https://aqicn.org/data-platform/token/";
 
 interface Props {
   state: AppState;
-  onOpenSettings: () => void;
+  onOpenSettings: (focusToken?: boolean) => void;
 }
 
-function open(url: string) {
+export function open(url: string) {
   void openUrl(url).catch(() => undefined);
+}
+
+function Onboarding({ onOpenSettings }: { onOpenSettings: (focusToken?: boolean) => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="panel onboarding">
+      <div className="onboard-head">
+        <span className="onboard-mark" aria-hidden="true">
+          ◍
+        </span>
+        <div>
+          <h1 className="empty-title">{t("onboard.title")}</h1>
+          <p className="empty-hint">{t("onboard.subtitle")}</p>
+        </div>
+      </div>
+
+      <ol className="steps">
+        <li>
+          <span className="step-n" aria-hidden="true">
+            1
+          </span>
+          <span className="step-text">{t("onboard.step1")}</span>
+        </li>
+        <li>
+          <span className="step-n" aria-hidden="true">
+            2
+          </span>
+          <span className="step-text">{t("onboard.step2")}</span>
+        </li>
+        <li>
+          <span className="step-n" aria-hidden="true">
+            3
+          </span>
+          <span className="step-text">{t("onboard.step3")}</span>
+        </li>
+      </ol>
+
+      <button type="button" className="primary wide" onClick={() => open(TOKEN_URL)}>
+        {t("onboard.getToken")} ↗
+      </button>
+      <button type="button" className="ghost wide" onClick={() => onOpenSettings(true)}>
+        {t("onboard.haveToken")}
+      </button>
+      <p className="hint center">{t("onboard.footnote")}</p>
+    </div>
+  );
+}
+
+function UpdateBanner({ state }: { state: AppState }) {
+  const { t } = useTranslation();
+  const [dismissed, setDismissed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const update = state.update;
+  if (!update || dismissed) return null;
+
+  return (
+    <div className="update">
+      <div className="update-text">
+        <strong>{t("update.available", { version: update.version })}</strong>
+        <span className="update-note">{t("update.note")}</span>
+      </div>
+      <div className="update-actions">
+        <button
+          type="button"
+          className="primary small"
+          disabled={state.installing}
+          onClick={() => {
+            setError(null);
+            void bridge.installUpdate().catch((err) => setError(String(err)));
+          }}
+        >
+          {state.installing ? t("update.installing") : t("update.install")}
+        </button>
+        <button
+          type="button"
+          className="ghost small"
+          aria-label={t("update.later")}
+          onClick={() => setDismissed(true)}
+        >
+          ✕
+        </button>
+      </div>
+      {error && <p className="error">{t("update.failed", { error })}</p>}
+    </div>
+  );
 }
 
 export default function Panel({ state, onOpenSettings }: Props) {
   const { t, i18n } = useTranslation();
   const snapshot = state.snapshot;
+
+  if (!state.config.token.trim()) {
+    return <Onboarding onOpenSettings={onOpenSettings} />;
+  }
+
   const category = categoryOf(snapshot?.aqi ?? null);
   const value =
     snapshot?.aqi !== null && snapshot?.aqi !== undefined && snapshot.aqi >= 0
       ? String(snapshot.aqi)
       : "–";
-
-  if (!state.config.token.trim()) {
-    return (
-      <div className="panel empty">
-        <div className="empty-mark" aria-hidden="true">
-          ◍
-        </div>
-        <p className="empty-title">{t("panel.noToken")}</p>
-        <p className="empty-hint">{t("panel.noTokenHint")}</p>
-        <button type="button" className="primary" onClick={onOpenSettings}>
-          {t("settings.open")}
-        </button>
-      </div>
-    );
-  }
 
   const pollutant = (code: string): Pollutant | undefined =>
     snapshot?.pollutants.find((p) => p.code === code);
@@ -50,6 +127,8 @@ export default function Panel({ state, onOpenSettings }: Props) {
 
   return (
     <div className="panel">
+      <UpdateBanner state={state} />
+
       <header className="head">
         <div
           className="badge"
@@ -130,7 +209,7 @@ export default function Panel({ state, onOpenSettings }: Props) {
         >
           ⟳ {t("panel.refresh")}
         </button>
-        <button type="button" className="ghost" onClick={onOpenSettings}>
+        <button type="button" className="ghost" onClick={() => onOpenSettings()}>
           ⚙ {t("panel.settings")}
         </button>
       </footer>
