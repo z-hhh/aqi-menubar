@@ -14,6 +14,7 @@
   <a href="https://github.com/z-hhh/aqi-menubar/releases/latest"><img src="https://img.shields.io/github/v/release/z-hhh/aqi-menubar?label=release" alt="最新版本"></a>
   <img src="https://img.shields.io/badge/platforms-macOS%2011%2B%20%7C%20Windows%2010%2F11-blue" alt="支持平台">
   <img src="https://img.shields.io/badge/licence-MIT-green" alt="MIT 许可">
+  <a href="https://aqi.zhhh.fun"><img src="https://img.shields.io/badge/website-aqi.zhhh.fun-blue" alt="落地页"></a>
 </p>
 
 <p align="center">
@@ -40,8 +41,8 @@ macOS 包是 ad-hoc 签名、未做公证，所以第一次打开系统会拦一
 [`packaging/homebrew`](packaging/homebrew) 里留了一份 cask 定义，想自建 tap 的人可以直接用。目前没有发布
 ——没有 Apple Developer ID（公证）的话，Homebrew 装完一样会被 Gatekeeper 拦，所以暂时不值得建 tap。
 
-落地页源码在 [`landing/`](landing)，由 `.github/workflows/pages.yml` 发布到 GitHub Pages：仓库
-**Settings → Pages → Source** 选一次 **GitHub Actions** 即可。
+落地页源码在 [`landing/`](landing)，由 `.github/workflows/pages.yml` 发布到 GitHub Pages，线上地址是
+**<https://aqi.zhhh.fun>**（自定义域名，Cloudflare 托管 `zhhh.fun`，灰云 CNAME 指向 `z-hhh.github.io`）。
 
 ## 截图
 

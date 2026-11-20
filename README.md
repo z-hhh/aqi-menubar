@@ -14,6 +14,7 @@
   <a href="https://github.com/z-hhh/aqi-menubar/releases/latest"><img src="https://img.shields.io/github/v/release/z-hhh/aqi-menubar?label=release" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/platforms-macOS%2011%2B%20%7C%20Windows%2010%2F11-blue" alt="Platforms">
   <img src="https://img.shields.io/badge/licence-MIT-green" alt="MIT licence">
+  <a href="https://aqi.zhhh.fun"><img src="https://img.shields.io/badge/website-aqi.zhhh.fun-blue" alt="Landing page"></a>
 </p>
 
 <p align="center">
@@ -42,8 +43,9 @@ A cask definition is kept in [`packaging/homebrew`](packaging/homebrew) for anyo
 run a tap of their own. It is not published: without an Apple Developer ID (notarisation) Homebrew
 installations hit the same Gatekeeper gate, so it is not worth a tap yet.
 
-The landing page lives in [`landing/`](landing) and is published to GitHub Pages by
-`.github/workflows/pages.yml` — enable **Settings → Pages → Source: GitHub Actions** once.
+The landing page lives in [`landing/`](landing) and is published to GitHub Pages at
+**<https://aqi.zhhh.fun>** by `.github/workflows/pages.yml` (custom domain via `zhhh.fun` on Cloudflare,
+DNS-only CNAME to `z-hhh.github.io`).
 
 ## Screenshots
 
