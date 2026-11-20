@@ -27,6 +27,9 @@ pub struct TrayDisplay {
     pub metric: String,
     /// Prefix the number with its name: "AQI 51" rather than "51".
     pub show_label: bool,
+    /// Append the quality level: "51 · 良". Uses the short word for the UI
+    /// language, because a menu bar cannot hold "Unhealthy for sensitive groups".
+    pub show_category: bool,
     /// Append the station name: "51 · Shanghai (上海)".
     pub show_station: bool,
     /// A small EPA-coloured dot before the text (macOS). Windows cannot show
@@ -40,6 +43,7 @@ impl Default for TrayDisplay {
         Self {
             metric: "aqi".to_string(),
             show_label: false,
+            show_category: true,
             show_station: false,
             show_icon: true,
         }
@@ -141,6 +145,8 @@ mod tests {
         let cfg: Config = serde_json::from_str(json).unwrap();
         assert_eq!(cfg.tray.metric, "aqi");
         assert!(cfg.tray.show_icon);
+        // The level word is on by default: the number alone says little.
+        assert!(cfg.tray.show_category);
         assert!(!cfg.tray.show_station);
         assert_eq!(cfg.token, "abc");
     }
@@ -151,6 +157,7 @@ mod tests {
             tray: TrayDisplay {
                 metric: "pm25".into(),
                 show_label: true,
+                show_category: false,
                 show_station: true,
                 show_icon: false,
             },
@@ -158,9 +165,11 @@ mod tests {
         };
         let json = serde_json::to_string(&cfg).unwrap();
         assert!(json.contains("\"showLabel\":true"), "{json}");
+        assert!(json.contains("\"showCategory\":false"), "{json}");
         assert!(json.contains("\"showStation\":true"), "{json}");
         let back: Config = serde_json::from_str(&json).unwrap();
         assert_eq!(back.tray.metric, "pm25");
         assert!(!back.tray.show_icon);
+        assert!(!back.tray.show_category);
     }
 }

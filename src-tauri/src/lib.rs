@@ -3,6 +3,7 @@ mod commands;
 mod config;
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 mod icons;
+mod level;
 mod tray;
 
 use commands::UpdateInfo;
@@ -43,14 +44,14 @@ async fn poll_loop(app: AppHandle, state: Arc<AppState>) {
 
         if cfg.token.trim().is_empty() {
             *state.error.lock().unwrap() = Some("no-token".to_string());
-            tray::clear(&app, &cfg.tray);
+            tray::clear(&app, &cfg.tray, &cfg.resolved_language());
             commands::emit_state(&app, &state);
         } else {
             match aqicn::fetch(&cfg).await {
                 Ok(snapshot) => {
                     *state.snapshot.lock().unwrap() = Some(snapshot.clone());
                     *state.error.lock().unwrap() = None;
-                    tray::update(&app, &snapshot, &cfg.tray);
+                    tray::update(&app, &snapshot, &cfg.tray, &cfg.resolved_language());
                 }
                 Err(err) => {
                     // Keep the last reading visible but mark it stale.
@@ -135,7 +136,7 @@ pub fn run() {
             app.manage(state.clone());
 
             tray::create(app.handle(), &cfg)?;
-            tray::clear(app.handle(), &cfg.tray);
+            tray::clear(app.handle(), &cfg.tray, &cfg.resolved_language());
 
             // First run: open the panel so the token step is obvious.
             // AQI_MENUBAR_SHOW is a developer hook for screenshots and e2e checks.

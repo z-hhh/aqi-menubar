@@ -30,6 +30,7 @@ function baseConfig(): Config {
     tray: {
       metric: (params.get("metric") as "aqi" | "pm25" | "none") ?? "aqi",
       showLabel: params.get("label") === "1",
+      showCategory: params.get("level") !== "0",
       showStation: params.get("station") === "1",
       showIcon: params.get("dot") !== "0",
     },

@@ -1,7 +1,9 @@
 use crate::{
     aqicn::Snapshot,
     config::{Config, TrayDisplay},
-    icons, AppState,
+    icons,
+    level::Level,
+    AppState,
 };
 use std::sync::Arc;
 use tauri::{
@@ -149,7 +151,12 @@ fn metric_text(snap: &Snapshot, metric: &str) -> Option<(String, &'static str)> 
     }
 }
 
-pub fn texts(snap: &Snapshot, display: &TrayDisplay) -> TrayText {
+/// Compose the menu bar title and the tooltip.
+///
+/// Order is value, level, station — the number people came for stays first and
+/// nearest the dot. The level word follows the UI language, so a Chinese menu
+/// bar reads `51 · 良` while the English one reads `51 · Moderate`.
+pub fn texts(snap: &Snapshot, display: &TrayDisplay, lang: &str) -> TrayText {
     // The title is a menu bar, not a page: keep the station short there and
     // let the tooltip carry the full name.
     let station = truncate_chars(snap.station.trim(), 18);
@@ -157,16 +164,26 @@ pub fn texts(snap: &Snapshot, display: &TrayDisplay) -> TrayText {
     let pm25 = code_value(snap, "pm25").map(|v| format!("PM2.5 {}", v.round() as i64));
     let aqi = aqi_value(snap);
 
+    // The level describes the AQI reading; with no reading there is no level.
+    let level = Level::of(aqi);
+    let level_word = if level.is_known() {
+        Some(level.short(lang))
+    } else {
+        None
+    };
+
     // Tooltip: always every useful number, regardless of what the title shows.
+    // Windows has no menu bar text at all, so the level belongs here for free.
     let mut tooltip_parts: Vec<String> = Vec::new();
     tooltip_parts.push(match aqi {
         Some(v) => format!("AQI {v}"),
         None => "AQI –".to_string(),
     });
+    if let Some(word) = level_word {
+        tooltip_parts.push(word.to_string());
+    }
     if let Some(pm) = pm25 {
-        if !pm.ends_with("–") {
-            tooltip_parts.push(pm);
-        }
+        tooltip_parts.push(pm);
     }
     if !tooltip_station.is_empty() {
         tooltip_parts.push(tooltip_station);
@@ -175,21 +192,30 @@ pub fn texts(snap: &Snapshot, display: &TrayDisplay) -> TrayText {
 
     let title = match metric_text(snap, &display.metric) {
         Some((value, label)) => {
-            let mut text = if display.show_label {
+            let mut parts: Vec<String> = Vec::new();
+            parts.push(if display.show_label {
                 format!("{label} {value}")
             } else {
                 value
-            };
-            if display.show_station && !station.is_empty() {
-                text.push_str(" · ");
-                text.push_str(&station);
+            });
+            if display.show_category {
+                if let Some(word) = level_word {
+                    parts.push(word.to_string());
+                }
             }
-            text
+            if display.show_station && !station.is_empty() {
+                parts.push(station.clone());
+            }
+            parts.join(" · ")
         }
         None => match (display.metric.as_str(), aqi) {
             // Icon-only: nothing beside the dot while there is a reading.
             ("none", Some(_)) if display.show_icon => String::new(),
-            (_, Some(v)) => v.to_string(),
+            (_, Some(v)) => match (display.show_category, level_word) {
+                // No dot, so the text stands in for it: keep the level there too.
+                (true, Some(word)) => format!("{v} · {word}"),
+                _ => v.to_string(),
+            },
             // No reading at all: a dash is clearer than a bare grey dot.
             (_, None) => "–".to_string(),
         },
@@ -198,11 +224,11 @@ pub fn texts(snap: &Snapshot, display: &TrayDisplay) -> TrayText {
     TrayText { title, tooltip }
 }
 
-pub fn update(app: &AppHandle, snap: &Snapshot, display: &TrayDisplay) {
+pub fn update(app: &AppHandle, snap: &Snapshot, display: &TrayDisplay, lang: &str) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
     };
-    let text = texts(snap, display);
+    let text = texts(snap, display, lang);
     let color = icons::color_for(snap.aqi);
 
     #[cfg(debug_assertions)]
@@ -227,17 +253,14 @@ pub fn update(app: &AppHandle, snap: &Snapshot, display: &TrayDisplay) {
     }
 }
 
-pub fn clear(app: &AppHandle, display: &TrayDisplay) {
+pub fn clear(app: &AppHandle, display: &TrayDisplay, _lang: &str) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
     };
     #[cfg(target_os = "macos")]
     {
         if display.show_icon {
-            let _ = tray.set_icon(Some(icons::dot_image(
-                icons::color_for(None),
-                18,
-            )));
+            let _ = tray.set_icon(Some(icons::dot_image(icons::color_for(None), 18)));
         } else {
             let _ = tray.set_icon(None::<tauri::image::Image>);
         }
@@ -246,10 +269,7 @@ pub fn clear(app: &AppHandle, display: &TrayDisplay) {
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = tray.set_icon(Some(icons::dot_image(
-            icons::color_for(None),
-            32,
-        )));
+        let _ = tray.set_icon(Some(icons::dot_image(icons::color_for(None), 32)));
         let _ = tray.set_tooltip(Some("AQI –"));
     }
 }
@@ -284,60 +304,124 @@ mod tests {
         TrayDisplay {
             metric: metric.into(),
             show_label: label,
+            show_category: false,
             show_station: station,
             show_icon: icon,
         }
     }
 
     #[test]
-    fn default_is_the_bare_number() {
-        let t = texts(&snap(Some(51), "Shanghai (上海)", Some(12.3)), &TrayDisplay::default());
-        assert_eq!(t.title, "51");
-        assert_eq!(t.tooltip, "AQI 51 · PM2.5 12 · Shanghai (上海)");
+    fn default_is_the_bare_number_with_its_level() {
+        let t = texts(
+            &snap(Some(51), "Shanghai (上海)", Some(12.3)),
+            &TrayDisplay::default(),
+            "en",
+        );
+        assert_eq!(t.title, "51 · Moderate");
+        assert_eq!(t.tooltip, "AQI 51 · Moderate · PM2.5 12 · Shanghai (上海)");
+    }
+
+    #[test]
+    fn the_level_word_follows_the_ui_language() {
+        let d = TrayDisplay {
+            show_station: true,
+            ..TrayDisplay::default()
+        };
+        let reading = snap(Some(51), "Shanghai (上海)", Some(12.3));
+        assert_eq!(
+            texts(&reading, &d, "zh-CN").title,
+            "51 · 良 · Shanghai (上海)"
+        );
+        assert_eq!(
+            texts(&reading, &d, "ja").title,
+            "51 · 普通 · Shanghai (上海)"
+        );
+        assert_eq!(
+            texts(&reading, &d, "en").title,
+            "51 · Moderate · Shanghai (上海)"
+        );
+    }
+
+    #[test]
+    fn the_level_can_be_turned_off() {
+        let d = display("aqi", false, false, true);
+        assert_eq!(texts(&snap(Some(51), "X", None), &d, "zh-CN").title, "51");
+    }
+
+    #[test]
+    fn label_level_and_station_compose_in_reading_order() {
+        let d = TrayDisplay {
+            metric: "aqi".into(),
+            show_label: true,
+            show_category: true,
+            show_station: true,
+            show_icon: true,
+        };
+        let t = texts(&snap(Some(178), "Shanghai (上海)", Some(120.0)), &d, "en");
+        assert_eq!(t.title, "AQI 178 · Unhealthy · Shanghai (上海)");
+        assert_eq!(
+            t.tooltip,
+            "AQI 178 · Unhealthy · PM2.5 120 · Shanghai (上海)"
+        );
     }
 
     #[test]
     fn label_and_station_are_opt_in() {
         let d = display("aqi", true, true, true);
-        let t = texts(&snap(Some(51), "Shanghai (上海)", Some(12.3)), &d);
+        let t = texts(&snap(Some(51), "Shanghai (上海)", Some(12.3)), &d, "en");
         assert_eq!(t.title, "AQI 51 · Shanghai (上海)");
 
         let d = display("aqi", true, false, true);
-        assert_eq!(texts(&snap(Some(51), "Shanghai (上海)", None), &d).title, "AQI 51");
+        assert_eq!(
+            texts(&snap(Some(51), "Shanghai (上海)", None), &d, "en").title,
+            "AQI 51"
+        );
     }
 
     #[test]
-    fn pm25_metric_shows_the_particle_number() {
-        let d = display("pm25", true, false, true);
-        let t = texts(&snap(Some(51), "X", Some(12.6)), &d);
-        assert_eq!(t.title, "PM2.5 13");
+    fn pm25_metric_shows_the_particle_number_and_the_aqi_level() {
+        let d = TrayDisplay {
+            show_category: true,
+            ..display("pm25", true, false, true)
+        };
+        let t = texts(&snap(Some(51), "X", Some(12.6)), &d, "zh-CN");
+        assert_eq!(t.title, "PM2.5 13 · 良");
     }
 
     #[test]
     fn pm25_metric_falls_back_to_aqi_when_the_station_has_no_pm25() {
         let d = display("pm25", true, false, true);
-        assert_eq!(texts(&snap(Some(51), "X", None), &d).title, "AQI 51");
+        assert_eq!(texts(&snap(Some(51), "X", None), &d, "en").title, "AQI 51");
     }
 
     #[test]
     fn no_metric_keeps_the_dot_only() {
         let d = display("none", true, true, true);
-        let t = texts(&snap(Some(51), "Shanghai", Some(12.0)), &d);
+        let t = texts(&snap(Some(51), "Shanghai", Some(12.0)), &d, "en");
         assert_eq!(t.title, "");
-        // The tooltip still carries the reading.
-        assert!(t.tooltip.starts_with("AQI 51"));
+        // The tooltip still carries the reading and the level.
+        assert_eq!(t.tooltip, "AQI 51 · Moderate · PM2.5 12 · Shanghai");
     }
 
     #[test]
     fn no_metric_without_a_dot_still_shows_the_number() {
         let d = display("none", false, false, false);
-        assert_eq!(texts(&snap(Some(51), "X", None), &d).title, "51");
-        assert_eq!(texts(&snap(None, "X", None), &d).title, "–");
+        assert_eq!(texts(&snap(Some(51), "X", None), &d, "en").title, "51");
+        assert_eq!(texts(&snap(None, "X", None), &d, "en").title, "–");
+        // With the level on, the text stands in for the missing dot.
+        let d = TrayDisplay {
+            show_category: true,
+            ..display("none", false, false, false)
+        };
+        assert_eq!(
+            texts(&snap(Some(51), "X", None), &d, "zh-CN").title,
+            "51 · 良"
+        );
     }
 
     #[test]
-    fn missing_reading_shows_a_dash() {
-        let t = texts(&snap(None, "", None), &TrayDisplay::default());
+    fn missing_reading_shows_a_dash_and_no_level() {
+        let t = texts(&snap(None, "", None), &TrayDisplay::default(), "en");
         assert_eq!(t.title, "–");
         assert_eq!(t.tooltip, "AQI –");
     }
@@ -345,15 +429,30 @@ mod tests {
     #[test]
     fn long_station_names_are_truncated_in_both_places() {
         let long = "A".repeat(60);
-        let t = texts(&snap(Some(51), &long, None), &display("aqi", false, true, true));
+        let t = texts(
+            &snap(Some(51), &long, None),
+            &display("aqi", false, true, true),
+            "en",
+        );
         assert!(t.title.chars().count() <= 24, "{}", t.title);
         assert!(t.title.ends_with('…'));
         assert!(t.tooltip.chars().count() <= 70, "{}", t.tooltip);
     }
 
     #[test]
-    fn no_reading_shows_a_dash_even_with_the_dot() {
-        let t = texts(&snap(None, "X", None), &TrayDisplay::default());
-        assert_eq!(t.title, "–");
+    fn extremes_keep_their_level() {
+        let d = TrayDisplay::default();
+        assert_eq!(
+            texts(&snap(Some(0), "X", None), &d, "zh-CN").title,
+            "0 · 优"
+        );
+        assert_eq!(
+            texts(&snap(Some(320), "X", None), &d, "zh-CN").title,
+            "320 · 严重污染"
+        );
+        assert_eq!(
+            texts(&snap(Some(320), "X", None), &d, "en").title,
+            "320 · Hazardous"
+        );
     }
 }

@@ -28,6 +28,15 @@
     "hazardous": "危険",
     "unknown": "データなし"
   },
+  "aqiShort": {
+    "good": "良好",
+    "moderate": "普通",
+    "sensitive": "要注意",
+    "unhealthy": "不健康",
+    "veryUnhealthy": "非常に悪い",
+    "hazardous": "危険",
+    "unknown": "データなし"
+  },
   "pollutants": {
     "pm25": "PM2.5",
     "pm10": "PM10",
@@ -62,6 +71,7 @@
     "trayPm25": "PM2.5",
     "trayIconOnly": "アイコンのみ",
     "trayLabel": "数値に名前を付ける（AQI 51）",
+    "trayCategory": "レベルを表示（51 · 普通）",
     "trayStation": "観測所名を表示",
     "trayDot": "カラードット",
     "trayHint": "切り替えるとメニューバーがすぐに変わります。",

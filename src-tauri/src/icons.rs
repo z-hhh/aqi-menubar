@@ -1,23 +1,17 @@
+use crate::level::Level;
 use tauri::image::Image;
 
-/// US EPA AQI category colors, plus grey for "no reading".
+/// US EPA AQI category colors, plus grey for "no reading". The bands live in
+/// `level`, so the dot and the level word always describe the same reading.
 pub fn color_for(aqi: Option<i32>) -> [u8; 3] {
-    let aqi = match aqi {
-        Some(v) if v >= 0 => v,
-        _ => return [0x9a, 0x9a, 0x9a],
-    };
-    if aqi <= 50 {
-        [0x00, 0xc8, 0x53]
-    } else if aqi <= 100 {
-        [0xff, 0xd6, 0x0a]
-    } else if aqi <= 150 {
-        [0xff, 0x7e, 0x00]
-    } else if aqi <= 200 {
-        [0xff, 0x3b, 0x30]
-    } else if aqi <= 300 {
-        [0x8f, 0x3f, 0x97]
-    } else {
-        [0x7e, 0x00, 0x23]
+    match Level::of(aqi) {
+        Level::Good => [0x00, 0xc8, 0x53],
+        Level::Moderate => [0xff, 0xd6, 0x0a],
+        Level::Sensitive => [0xff, 0x7e, 0x00],
+        Level::Unhealthy => [0xff, 0x3b, 0x30],
+        Level::VeryUnhealthy => [0x8f, 0x3f, 0x97],
+        Level::Hazardous => [0x7e, 0x00, 0x23],
+        Level::Unknown => [0x9a, 0x9a, 0x9a],
     }
 }
 

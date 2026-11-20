@@ -10,6 +10,8 @@ export type TrayMetric = "aqi" | "pm25" | "none";
 export interface TrayDisplay {
   metric: TrayMetric;
   showLabel: boolean;
+  /** Append the quality level, e.g. "51 · 良". */
+  showCategory: boolean;
   showStation: boolean;
   showIcon: boolean;
 }

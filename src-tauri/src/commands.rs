@@ -66,9 +66,10 @@ pub fn save_config(
     tray::refresh_menu(&app, &next);
     // Apply the tray display change right away instead of waiting for the
     // next poll, so the menu bar reacts the moment the user saves.
+    let lang = next.resolved_language();
     match state.snapshot.lock().unwrap().as_ref() {
-        Some(snapshot) => tray::update(&app, snapshot, &next.tray),
-        None => tray::clear(&app, &next.tray),
+        Some(snapshot) => tray::update(&app, snapshot, &next.tray, &lang),
+        None => tray::clear(&app, &next.tray, &lang),
     }
     state.notify.notify_one();
     Ok(dto(state.inner()))
@@ -83,9 +84,10 @@ pub fn refresh_now(state: State<'_, Arc<AppState>>) {
 /// so the settings screen can preview as the user toggles options.
 #[tauri::command]
 pub fn preview_tray(app: AppHandle, state: State<'_, Arc<AppState>>, display: TrayDisplay) {
+    let lang = state.config.lock().unwrap().resolved_language();
     match state.snapshot.lock().unwrap().as_ref() {
-        Some(snapshot) => tray::update(&app, snapshot, &display),
-        None => tray::clear(&app, &display),
+        Some(snapshot) => tray::update(&app, snapshot, &display, &lang),
+        None => tray::clear(&app, &display, &lang),
     }
 }
 

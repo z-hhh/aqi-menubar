@@ -15,12 +15,16 @@ your own free API token: no account, no backend of ours, no telemetry.
 
 ## Install
 
-```bash
-brew install --cask z-hhh/aqi-menubar/aqi-menubar
-```
+Take the `.dmg` (macOS) or the installer (Windows) from
+[Releases](https://github.com/z-hhh/aqi-menubar/releases/latest). Both builds update themselves in
+place from the signed release feed.
 
-or take the `.dmg` / installer from [Releases](https://github.com/z-hhh/aqi-menubar/releases/latest).
-Both builds update themselves in place (signed updater artifacts from the same release feed).
+The macOS build is ad-hoc signed, not notarised, so the first launch asks for confirmation:
+right-click the app → **Open**, or allow it under **System Settings → Privacy & Security**.
+
+A cask definition is kept in [`packaging/homebrew`](packaging/homebrew) for anyone who wants to
+run a tap of their own. It is not published: without an Apple Developer ID (notarisation) Homebrew
+installations hit the same Gatekeeper gate, so it is not worth a tap yet.
 
 The landing page lives in [`landing/`](landing) and is published to GitHub Pages by
 `.github/workflows/pages.yml` — enable **Settings → Pages → Source: GitHub Actions** once.
@@ -28,10 +32,11 @@ The landing page lives in [`landing/`](landing) and is published to GitHub Pages
 ## What it does
 
 - **Menu bar / tray**: configurable. Pick the AQI number, the PM2.5 number, or just a
-  coloured dot; add the `AQI` label and the station name or not. Settings shows a live
-  preview of the result, and the change lands in the menu bar as you save.
-  (Windows cannot render text in the notification area, so there the dot is the icon and
-  the numbers live in the tooltip.)
+  coloured dot; add the `AQI` label, the quality level (`51 · 良`, `51 · Moderate`) and the
+  station name or not. The level word follows the interface language and is on by default.
+  Settings shows a live preview of the result, and the change lands in the menu bar as you
+  save. (Windows cannot render text in the notification area, so there the dot is the icon and
+  the numbers plus the level live in the tooltip.)
 - **Panel** (click the tray item): AQI badge and category, station name, station reading time,
   PM2.5 / PM10 / O₃ / NO₂ / SO₂ / CO, main pollutant, temperature, humidity and wind, and the
   full list of upstream data sources as clickable links.
@@ -107,6 +112,7 @@ src-tauri/src/
   aqicn.rs            API client + response parsing (+ unit tests)
   config.rs           Settings model (location, refresh, language, tray display) and storage
   tray.rs             Tray icon, menu, panel positioning, menu bar text composition (+ tests)
+  level.rs            AQI bands and their localised level words (tray, dot colour, panel)
   icons.rs            EPA colour bands and the generated tray dot
   commands.rs         IPC surface: state, config, search, tray preview, updater
   lib.rs              App setup, the polling loop, the update check
@@ -119,7 +125,9 @@ the tray and pushes the new state to the UI over an event. The UI never polls by
 update check runs in Rust on its own timer for the same reason.
 
 The menu bar text is composed in exactly one place (`tray::texts`); `src/aqi.ts` `trayText()`
-mirrors it for the Settings preview, and both have to be changed together.
+mirrors it for the Settings preview, and both have to be changed together. The bands themselves
+live in `level.rs`; the frontend's `categoryOf()` in `src/aqi.ts` mirrors them for colours and
+the panel.
 
 ### Releasing
 

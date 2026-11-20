@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import type { Snapshot, TrayDisplay } from "./types";
 
 export type Category =
@@ -101,27 +102,40 @@ function metricText(
   return aqi === null ? null : { value: String(aqi), label: "AQI" };
 }
 
+function aqiValue(snapshot: Snapshot | null): number | null {
+  return snapshot?.aqi !== null && snapshot?.aqi !== undefined && snapshot.aqi >= 0
+    ? snapshot.aqi
+    : null;
+}
+
 /**
  * The menu bar title a display setting produces, given a reading. Mirrors
  * `tray::texts` in Rust — the two must agree; used for the live preview.
+ * The level word comes from the locale files (`aqiShort`), the same words the
+ * Rust side uses for the real menu bar.
  */
-export function trayText(snapshot: Snapshot | null, display: TrayDisplay): string {
+export function trayText(
+  snapshot: Snapshot | null,
+  display: TrayDisplay,
+  t: TFunction,
+): string {
   const station = truncate((snapshot?.station ?? "").trim(), 18);
   const hit = metricText(snapshot, display.metric);
+  const aqi = aqiValue(snapshot);
+  const category = categoryOf(aqi);
+  const level =
+    display.showCategory && category !== "unknown" ? t(`aqiShort.${category}`) : null;
 
   if (!hit) {
-    const aqi =
-      snapshot?.aqi !== null && snapshot?.aqi !== undefined && snapshot.aqi >= 0
-        ? String(snapshot.aqi)
-        : null;
     // Icon-only: nothing beside the dot while there is a reading; a dash is
     // clearer than a bare grey dot when there is none.
     if (aqi === null) return "–";
     if (display.metric === "none" && display.showIcon) return "";
-    return aqi;
+    return level ? `${aqi} · ${level}` : String(aqi);
   }
 
-  let text = display.showLabel ? `${hit.label} ${hit.value}` : hit.value;
-  if (display.showStation && station) text += ` · ${station}`;
-  return text;
+  const parts = [display.showLabel ? `${hit.label} ${hit.value}` : hit.value];
+  if (level) parts.push(level);
+  if (display.showStation && station) parts.push(station);
+  return parts.join(" · ");
 }

@@ -28,6 +28,15 @@
     "hazardous": "Hazardous",
     "unknown": "No reading"
   },
+  "aqiShort": {
+    "good": "Good",
+    "moderate": "Moderate",
+    "sensitive": "Sensitive",
+    "unhealthy": "Unhealthy",
+    "veryUnhealthy": "Very unhealthy",
+    "hazardous": "Hazardous",
+    "unknown": "No reading"
+  },
   "pollutants": {
     "pm25": "PM2.5",
     "pm10": "PM10",
@@ -62,6 +71,7 @@
     "trayPm25": "PM2.5",
     "trayIconOnly": "Icon only",
     "trayLabel": "Label the number (AQI 51)",
+    "trayCategory": "Show the level (AQI 51 · Moderate)",
     "trayStation": "Show the station name",
     "trayDot": "Colour dot",
     "trayHint": "The menu bar changes as you toggle these.",

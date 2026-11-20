@@ -111,33 +111,6 @@
       .btn.primary { background: var(--accent); color: var(--accent-ink); }
       .btn.secondary { border-color: var(--line); color: var(--fg); background: transparent; }
       .btn small { font-weight: 500; opacity: 0.75; }
-      .brew {
-        margin: 20px 0 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 11px;
-        padding: 10px 12px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 12.5px;
-        overflow-x: auto;
-        white-space: nowrap;
-      }
-      .brew code { flex: 1; }
-      .brew button {
-        font: inherit;
-        font-family: inherit;
-        background: transparent;
-        border: 0;
-        color: var(--muted);
-        cursor: pointer;
-        padding: 2px 4px;
-        border-radius: 6px;
-        white-space: nowrap;
-      }
-      .brew button:hover { color: var(--fg); background: var(--line); }
       .fineprint { color: var(--muted); font-size: 12.5px; margin-top: 14px; }
 
       .shot { position: relative; }
@@ -224,10 +197,6 @@
                 <span data-i18n="dlWin">Download for Windows</span>
               </a>
             </div>
-            <div class="brew">
-              <code>brew install --cask z-hhh/aqi-menubar/aqi-menubar</code>
-              <button type="button" id="copy-brew" data-i18n="copy">Copy</button>
-            </div>
             <p class="fineprint" data-i18n="fineprint">
               macOS 11+ (Apple Silicon and Intel) · Windows 10/11 · MIT licence
             </p>
@@ -244,8 +213,9 @@
               <span class="k" aria-hidden="true">◍</span>
               <h3 data-i18n="f1t">A menu bar you actually control</h3>
               <p data-i18n="f1b">
-                Show the AQI, the PM2.5 number, or just a colour dot. Add “AQI 51”, the station
-                name, or neither. The panel previews the result as you toggle it.
+                Show the AQI, the PM2.5 number, or just a colour dot. Add “AQI 51”, the quality
+                level (“51 · Moderate”, “51 · 良”), the station name, or none of them. The panel
+                previews the result as you toggle it.
               </p>
             </div>
             <div class="feature">
@@ -294,10 +264,10 @@
           <h2 data-i18n="installTitle">Install</h2>
           <div class="installs">
             <div class="card">
-              <h3>Homebrew</h3>
-              <p class="meta" data-i18n="brewMeta">macOS, and the easiest way to update</p>
-              <code class="block">brew install --cask z-hhh/aqi-menubar/aqi-menubar</code>
-              <a class="btn secondary" href="https://github.com/z-hhh/homebrew-aqi-menubar">github.com/z-hhh/homebrew-aqi-menubar</a>
+              <h3 data-i18n="buildTitle">Build from source</h3>
+              <p class="meta" data-i18n="buildMeta">Rust + pnpm, a couple of minutes</p>
+              <code class="block">git clone https://github.com/z-hhh/aqi-menubar.git</code>
+              <a class="btn secondary" href="https://github.com/z-hhh/aqi-menubar" data-i18n="openRepo">Open the repository</a>
             </div>
             <div class="card">
               <h3>macOS</h3>
@@ -365,7 +335,7 @@
           fineprint: "macOS 11+ (Apple Silicon and Intel) · Windows 10/11 · MIT licence",
           featuresTitle: "What it does",
           f1t: "A menu bar you actually control",
-          f1b: "Show the AQI, the PM2.5 number, or just a colour dot. Add “AQI 51”, the station name, or neither. The panel previews the result as you toggle it.",
+          f1b: "Show the AQI, the PM2.5 number, or just a colour dot. Add “AQI 51”, the quality level (“51 · Moderate”), the station name, or none of them. The panel previews the result as you toggle it.",
           f2t: "English, 简体中文, 日本語",
           f2b: "Follows your system language, or pick one in Settings. The tray menu changes with it.",
           f3t: "Your token, your request",
@@ -377,7 +347,9 @@
           f6t: "MIT, all of it",
           f6b: "Rust and TypeScript, built with Tauri. Read it, fork it, ship your own version.",
           installTitle: "Install",
-          brewMeta: "macOS, and the easiest way to update",
+          buildTitle: "Build from source",
+          buildMeta: "Rust + pnpm, a couple of minutes",
+          openRepo: "Open the repository",
           macMeta: "Universal .dmg for macOS 11 and later",
           winMeta: "Installer for Windows 10 and 11",
           openReleases: "Open the releases page",
@@ -400,7 +372,7 @@
           fineprint: "macOS 11 以上（Apple 芯片与 Intel）· Windows 10/11 · MIT 许可",
           featuresTitle: "它能做什么",
           f1t: "菜单栏显示什么，你说了算",
-          f1b: "显示 AQI、PM2.5，还是只留一个彩色圆点；要不要带“AQI 51”、要不要带站点名。设置里切换时，预览会实时跟着变。",
+          f1b: "显示 AQI、PM2.5，还是只留一个彩色圆点；要不要带“AQI 51”、要不要带质量等级（“51 · 良”）、要不要带站点名。设置里切换时，预览会实时跟着变。",
           f2t: "中文、English、日本語",
           f2b: "跟随系统语言，也可以在设置里手动选。托盘右键菜单一起切换。",
           f3t: "你的 token，你的请求",
@@ -412,7 +384,9 @@
           f6t: "整份 MIT",
           f6b: "Rust + TypeScript，Tauri 构建。随便读、随便 fork、随便发布你自己的版本。",
           installTitle: "安装",
-          brewMeta: "macOS，也是更新最省事的方式",
+          buildTitle: "从源码构建",
+          buildMeta: "Rust + pnpm，几分钟",
+          openRepo: "打开仓库",
           macMeta: "通用 .dmg，支持 macOS 11 及以上",
           winMeta: "Windows 10 / 11 安装包",
           openReleases: "打开 Releases 页面",
@@ -435,7 +409,7 @@
           fineprint: "macOS 11 以降（Apple Silicon / Intel）· Windows 10/11 · MIT ライセンス",
           featuresTitle: "できること",
           f1t: "メニューバーの表示は自由に",
-          f1b: "AQI、PM2.5、カラードットのみ。名前を付けるか、観測所名を出すか。設定で切り替えるとプレビューがすぐ反映されます。",
+          f1b: "AQI、PM2.5、カラードットのどれを出すか。数値の名前（AQI 51）、レベル（51 · 普通）、観測所名を付けるかも選べます。設定で切り替えるとプレビューがすぐ反映されます。",
           f2t: "日本語、English、简体中文",
           f2b: "システム言語に合わせるか、設定で選択。トレイメニューも一緒に切り替わります。",
           f3t: "自分のトークンで、直接",
@@ -447,7 +421,9 @@
           f6t: "すべて MIT",
           f6b: "Rust と TypeScript、Tauri 製。読むのも fork するのも自由です。",
           installTitle: "インストール",
-          brewMeta: "macOS。更新もいちばん楽です",
+          buildTitle: "ソースからビルド",
+          buildMeta: "Rust + pnpm、数分",
+          openRepo: "リポジトリを開く",
           macMeta: "macOS 11 以降向けユニバーサル .dmg",
           winMeta: "Windows 10 / 11 用インストーラー",
           openReleases: "リリースページを開く",
@@ -500,22 +476,6 @@
         win.classList.replace("secondary", "primary");
       }
 
-      const copy = document.getElementById("copy-brew");
-      copy.addEventListener("click", async () => {
-        const text = "brew install --cask z-hhh/aqi-menubar/aqi-menubar";
-        try {
-          await navigator.clipboard.writeText(text);
-        } catch {
-          const range = document.createRange();
-          range.selectNode(document.querySelector(".brew code"));
-          window.getSelection().removeAllRanges();
-          window.getSelection().addRange(range);
-          return;
-        }
-        const dict = STRINGS[window.__lang] || STRINGS.en;
-        copy.textContent = dict.copied;
-        setTimeout(() => (copy.textContent = dict.copy), 1600);
-      });
     </script>
   </body>
 </html>

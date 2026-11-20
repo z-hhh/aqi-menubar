@@ -21,11 +21,20 @@
   },
   "aqi": {
     "good": "优",
-    "moderate": "中等",
-    "sensitive": "对敏感人群不健康",
-    "unhealthy": "不健康",
-    "veryUnhealthy": "非常不健康",
-    "hazardous": "危险",
+    "moderate": "良",
+    "sensitive": "轻度污染",
+    "unhealthy": "中度污染",
+    "veryUnhealthy": "重度污染",
+    "hazardous": "严重污染",
+    "unknown": "暂无读数"
+  },
+  "aqiShort": {
+    "good": "优",
+    "moderate": "良",
+    "sensitive": "轻度污染",
+    "unhealthy": "中度污染",
+    "veryUnhealthy": "重度污染",
+    "hazardous": "严重污染",
     "unknown": "暂无读数"
   },
   "pollutants": {
@@ -62,6 +71,7 @@
     "trayPm25": "PM2.5",
     "trayIconOnly": "只显示图标",
     "trayLabel": "数值前带名称（AQI 51）",
+    "trayCategory": "显示质量等级（51 · 良）",
     "trayStation": "显示站点名",
     "trayDot": "彩色圆点",
     "trayHint": "切换后菜单栏会立刻变化。",

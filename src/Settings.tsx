@@ -119,7 +119,7 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   }
 
   const category = categoryOf(state.snapshot?.aqi ?? null);
-  const preview = trayText(state.snapshot, tray);
+  const preview = trayText(state.snapshot, tray, t);
 
   return (
     <div className="panel settings">
@@ -261,6 +261,14 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
             onChange={(e) => changeTray({ showLabel: e.target.checked })}
           />
           <span>{t("settings.trayLabel")}</span>
+        </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={tray.showCategory}
+            onChange={(e) => changeTray({ showCategory: e.target.checked })}
+          />
+          <span>{t("settings.trayCategory")}</span>
         </label>
         <label className="check">
           <input
