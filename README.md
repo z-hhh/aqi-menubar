@@ -133,7 +133,7 @@ the panel.
 
 Tag a commit (`git tag v0.2.0 && git push --tags`). `.github/workflows/release.yml` builds a
 universal macOS bundle and a Windows installer, signs the updater artifacts and opens a draft
-release with `latest.json`, then bumps the Homebrew cask.
+release with `latest.json`.
 
 Repository secrets it needs:
 
@@ -141,7 +141,6 @@ Repository secrets it needs:
 |---|---|
 | `TAURI_SIGNING_PRIVATE_KEY` | signs updater artifacts (contents of `~/.tauri/aqi-menubar.key`) |
 | `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | its password (empty is fine) |
-| `TAP_GITHUB_TOKEN` | pushes the cask to `z-hhh/homebrew-aqi-menubar`; without it the cask job skips |
 
 If the signing key is lost, existing installs cannot verify updates and everyone has to
 download once by hand — keep it somewhere safe.
