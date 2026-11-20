@@ -1,6 +1,6 @@
 // Development-only stand-in for the Rust backend, so the panel can be built and
 // reviewed in a plain browser (`pnpm dev`). Never reached inside the app.
-import type { AppState, Config, StationHit } from "./types";
+import type { AppState, Config, SaveConfig, StationHit } from "./types";
 
 const params = new URLSearchParams(window.location.search);
 const lang = params.get("lang") ?? "auto";
@@ -23,7 +23,6 @@ const ATTRIBUTIONS = [
 
 function baseConfig(): Config {
   return {
-    token: mode === "empty" ? "" : "demo",
     location: { kind: "here" },
     refreshMinutes: 30,
     language: lang,
@@ -48,6 +47,7 @@ export function sampleState(): AppState {
   if (mode === "empty") {
     return {
       config: baseConfig(),
+      tokenSet: false,
       snapshot: null,
       error: null,
       resolvedLanguage: "en",
@@ -59,6 +59,7 @@ export function sampleState(): AppState {
   const aqi = aqiParam ? Number(aqiParam) : 50;
   return {
     config: baseConfig(),
+    tokenSet: true,
     resolvedLanguage: "en",
     error: mode === "error" ? "network-error: connection timed out" : null,
     platform: "macos",
@@ -94,8 +95,13 @@ export async function mockGetState(): Promise<AppState> {
   return current;
 }
 
-export async function mockSaveConfig(next: Config): Promise<AppState> {
-  current = { ...current, config: next };
+export async function mockSaveConfig(next: SaveConfig): Promise<AppState> {
+  const { token, ...config } = next;
+  current = {
+    ...current,
+    config,
+    tokenSet: token?.trim() ? true : current.tokenSet,
+  };
   return current;
 }
 

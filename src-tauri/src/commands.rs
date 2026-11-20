@@ -22,7 +22,10 @@ pub struct UpdateInfo {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppStateDto {
+    /// The saved settings, with the token blanked: the token never leaves Rust.
     pub config: Config,
+    /// Whether a token is stored, so the UI can tell "none yet" from "saved".
+    pub token_set: bool,
     pub snapshot: Option<Snapshot>,
     pub error: Option<String>,
     /// The language actually in effect ("auto" already resolved).
@@ -34,10 +37,11 @@ pub struct AppStateDto {
 }
 
 pub fn dto(state: &AppState) -> AppStateDto {
-    let config = state.config.lock().unwrap().clone();
+    let stored = state.config.lock().unwrap().clone();
     AppStateDto {
-        resolved_language: config.resolved_language(),
-        config,
+        resolved_language: stored.resolved_language(),
+        token_set: stored.has_token(),
+        config: stored.without_token(),
         snapshot: state.snapshot.lock().unwrap().clone(),
         error: state.error.lock().unwrap().clone(),
         platform: std::env::consts::OS.to_string(),
@@ -59,8 +63,11 @@ pub fn get_state(state: State<'_, Arc<AppState>>) -> AppStateDto {
 pub fn save_config(
     app: AppHandle,
     state: State<'_, Arc<AppState>>,
-    next: Config,
+    mut next: Config,
 ) -> Result<AppStateDto, String> {
+    // The settings screen never sees the saved token, so it does not send one
+    // back: keep what is already stored instead of blanking it.
+    next.keep_token_from(&state.config.lock().unwrap());
     next.save(&app).map_err(|e| e.to_string())?;
     *state.config.lock().unwrap() = next.clone();
     tray::refresh_menu(&app, &next);
@@ -142,4 +149,36 @@ pub async fn install_update(app: AppHandle, state: State<'_, Arc<AppState>>) -> 
     }
 
     app.restart();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{config::Config, AppState};
+
+    #[test]
+    fn the_state_handed_to_the_ui_carries_no_token() {
+        let cfg = Config {
+            token: "secret-token".into(),
+            ..Config::default()
+        };
+        let state = AppState::new(cfg);
+        let dto = dto(&state);
+        assert!(dto.token_set);
+        assert!(dto.config.token.is_empty());
+
+        // What actually crosses the IPC bridge.
+        let json = serde_json::to_value(&dto).unwrap();
+        assert_eq!(json["tokenSet"], true);
+        assert_eq!(json["config"]["token"], "");
+        assert!(!json.to_string().contains("secret-token"));
+    }
+
+    #[test]
+    fn without_a_token_the_ui_is_told_there_is_none() {
+        let state = AppState::new(Config::default());
+        let dto = dto(&state);
+        assert!(!dto.token_set);
+        assert!(dto.config.token.is_empty());
+    }
 }

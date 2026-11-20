@@ -133,6 +133,29 @@ impl Config {
         }
     }
 
+    /// True when a token is stored. The web view is told this, never the token.
+    pub fn has_token(&self) -> bool {
+        !self.token.trim().is_empty()
+    }
+
+    /// A copy that is safe to hand to the web view: the token never leaves Rust.
+    pub fn without_token(&self) -> Self {
+        let mut copy = self.clone();
+        copy.token.clear();
+        copy
+    }
+
+    /// The settings screen only sends a token when the person typed a new one,
+    /// so an empty incoming token means "keep the saved one", not "clear it".
+    pub fn keep_token_from(&mut self, previous: &Self) {
+        let typed = self.token.trim();
+        self.token = if typed.is_empty() {
+            previous.token.clone()
+        } else {
+            typed.to_string()
+        };
+    }
+
     pub fn refresh_seconds(&self) -> u64 {
         // aqicn's own stations update hourly; polling faster than 5 min only
         // burns quota, so clamp to that floor.
@@ -154,6 +177,43 @@ mod tests {
         assert!(cfg.tray.show_category);
         assert!(!cfg.tray.show_station);
         assert_eq!(cfg.token, "abc");
+    }
+
+    #[test]
+    fn the_token_never_reaches_the_web_view() {
+        let cfg = Config {
+            token: "secret-token".into(),
+            ..Config::default()
+        };
+        assert!(cfg.has_token());
+        let view = cfg.without_token();
+        assert!(view.token.is_empty());
+        assert!(!view.has_token());
+        // Only the token is dropped; everything else is what the UI shows.
+        assert_eq!(view.refresh_minutes, cfg.refresh_minutes);
+        assert_eq!(view.tray.metric, cfg.tray.metric);
+    }
+
+    #[test]
+    fn an_empty_incoming_token_keeps_the_saved_one() {
+        let previous = Config {
+            token: "saved".into(),
+            ..Config::default()
+        };
+
+        let mut next = Config::default();
+        next.keep_token_from(&previous);
+        assert_eq!(next.token, "saved");
+
+        // A typed token replaces the saved one, trimmed.
+        next.token = "  typed  ".into();
+        next.keep_token_from(&previous);
+        assert_eq!(next.token, "typed");
+
+        // Never configured: stays empty so the app still asks for one.
+        let mut fresh = Config::default();
+        fresh.keep_token_from(&Config::default());
+        assert!(!fresh.has_token());
     }
 
     #[test]

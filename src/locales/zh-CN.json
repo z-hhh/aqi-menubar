@@ -55,6 +55,8 @@
     "token": "aqicn API token",
     "tokenPlaceholder": "粘贴你的 token",
     "tokenHint": "免费、即时申请，在这里获取：",
+    "tokenSavedPlaceholder": "已保存 · 留空不修改",
+    "tokenSavedHint": "已保存的 token 不会再显示。留空保存则保持不变；粘贴新 token 可以替换。",
     "tokenGuide": "还没有 token？免费申请，十秒搞定，token 直接发到你的邮箱。",
     "tokenNeeded": "必须填写 token。",
     "location": "监测位置",

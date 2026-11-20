@@ -18,8 +18,11 @@ export interface TrayDisplay {
   colorText: boolean;
 }
 
+/**
+ * The saved settings as the UI sees them. The aqicn token is deliberately
+ * absent: it stays in the Rust side and is never sent to the web view.
+ */
 export interface Config {
-  token: string;
   location: Location;
   refreshMinutes: number;
   language: string;
@@ -54,8 +57,16 @@ export interface UpdateInfo {
   notes: string | null;
 }
 
+/** What the settings screen sends back. `token` is present only when the
+ *  person typed a new one; without it the backend keeps the saved token. */
+export interface SaveConfig extends Config {
+  token?: string;
+}
+
 export interface AppState {
   config: Config;
+  /** A token is stored. The token itself is never exposed. */
+  tokenSet: boolean;
   snapshot: Snapshot | null;
   error: string | null;
   resolvedLanguage: string;

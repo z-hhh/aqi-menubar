@@ -18,6 +18,8 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   const { t } = useTranslation();
   const initial = state.config;
   const isWindows = state.platform === "windows";
+  /** A token is already stored; it is never shown, so the field starts empty. */
+  const saved = state.tokenSet;
 
   const initialMode = initial.location.kind === "city" || initial.location.kind === "station"
     ? "city"
@@ -29,7 +31,7 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
         ? `@${initial.location.uid}`
         : "";
 
-  const [token, setToken] = useState(initial.token);
+  const [token, setToken] = useState("");
   const [mode, setMode] = useState<"here" | "city">(initialMode);
   const [query, setQuery] = useState(initialQuery);
   const [hits, setHits] = useState<StationHit[]>([]);
@@ -82,7 +84,7 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   }
 
   async function save() {
-    if (!token.trim()) {
+    if (!token.trim() && !saved) {
       setError(t("settings.tokenNeeded"));
       tokenRef.current?.focus();
       return;
@@ -96,14 +98,18 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
     setBusy(true);
     setError(null);
     try {
+      // Only a freshly typed token is sent: the saved one is kept by the
+      // backend, and the field is cleared again so it is not left on screen.
+      const typed = token.trim();
       const next = await bridge.saveConfig({
-        token: token.trim(),
+        ...(typed ? { token: typed } : {}),
         location,
         refreshMinutes: refresh,
         language,
         tray,
       });
       committed.current = true;
+      setToken("");
       onSaved(next);
     } catch (err) {
       setError(String(err));
@@ -132,7 +138,7 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
         <span className="bar-spacer" />
       </header>
 
-      {!token.trim() && (
+      {!saved && (
         <div className="callout">
           <p className="callout-text">{t("settings.tokenGuide")}</p>
           <button type="button" className="primary small" onClick={() => open(TOKEN_URL)}>
@@ -154,11 +160,15 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
           spellCheck={false}
           autoCapitalize="off"
           autoCorrect="off"
-          placeholder={t("settings.tokenPlaceholder")}
+          placeholder={
+            saved && !token
+              ? t("settings.tokenSavedPlaceholder")
+              : t("settings.tokenPlaceholder")
+          }
           onChange={(e) => setToken(e.target.value)}
         />
         <span className="hint" id="token-hint">
-          {t("settings.tokenHint")}{" "}
+          {saved && !token ? t("settings.tokenSavedHint") : t("settings.tokenHint")}{" "}
           <button type="button" className="link inline" onClick={() => open(TOKEN_URL)}>
             aqicn.org
           </button>

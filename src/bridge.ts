@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { AppState, Config, StationHit, TrayDisplay, UpdateInfo } from "./types";
+import type { AppState, SaveConfig, StationHit, TrayDisplay, UpdateInfo } from "./types";
 import { mockGetState, mockListen, mockSaveConfig, mockSearch } from "./mock";
 
 const hasTauri = "__TAURI_INTERNALS__" in window;
@@ -12,7 +12,7 @@ export const bridge = {
   getState: (): Promise<AppState> =>
     hasTauri ? invoke<AppState>("get_state") : mockGetState(),
 
-  saveConfig: (next: Config): Promise<AppState> =>
+  saveConfig: (next: SaveConfig): Promise<AppState> =>
     hasTauri ? invoke<AppState>("save_config", { next }) : mockSaveConfig(next),
 
   refreshNow: (): Promise<void> =>

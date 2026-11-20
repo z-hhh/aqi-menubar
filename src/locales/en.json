@@ -55,6 +55,8 @@
     "token": "aqicn API token",
     "tokenPlaceholder": "Paste your token",
     "tokenHint": "Free and instant. Get one at",
+    "tokenSavedPlaceholder": "Saved · leave empty to keep",
+    "tokenSavedHint": "A saved token is never shown again. Leave this empty to keep it, or paste a new one to replace it.",
     "tokenGuide": "No token yet? It's free and takes about ten seconds — the token is emailed to you.",
     "tokenNeeded": "A token is required.",
     "location": "Location",

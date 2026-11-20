@@ -152,7 +152,7 @@ export default function Panel({ state, onOpenSettings }: Props) {
   const { t, i18n } = useTranslation();
   const snapshot = state.snapshot;
 
-  if (!state.config.token.trim()) {
+  if (!state.tokenSet) {
     return <Onboarding onOpenSettings={onOpenSettings} />;
   }
 

@@ -55,6 +55,8 @@
     "token": "aqicn API トークン",
     "tokenPlaceholder": "トークンを貼り付け",
     "tokenHint": "無料ですぐ取得できます:",
+    "tokenSavedPlaceholder": "保存済み · 空欄なら変更なし",
+    "tokenSavedHint": "保存したトークンは再表示されません。空欄のまま保存すれば変更されません。新しいトークンを貼り付けると置き換わります。",
     "tokenGuide": "トークンがまだない場合、無料で10秒ほどで取得できます。メールで届きます。",
     "tokenNeeded": "トークンが必要です。",
     "location": "観測地点",

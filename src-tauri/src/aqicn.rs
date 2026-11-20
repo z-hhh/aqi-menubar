@@ -66,7 +66,7 @@ fn client() -> Result<reqwest::Client, ApiError> {
         .user_agent(concat!("aqi-menubar/", env!("CARGO_PKG_VERSION")))
         .timeout(std::time::Duration::from_secs(20))
         .build()
-        .map_err(|e| ApiError::Network(e.to_string()))
+        .map_err(net_err)
 }
 
 fn feed_url(location: &Location) -> String {
@@ -79,6 +79,12 @@ fn feed_url(location: &Location) -> String {
     }
 }
 
+/// A network failure with the request URL dropped. The URL carries the token,
+/// and this text ends up in the panel, so it must never contain it.
+fn net_err(e: reqwest::Error) -> ApiError {
+    ApiError::Network(e.without_url().to_string())
+}
+
 pub async fn fetch(cfg: &Config) -> Result<Snapshot, ApiError> {
     let token = cfg.token.trim();
     if token.is_empty() {
@@ -89,11 +95,11 @@ pub async fn fetch(cfg: &Config) -> Result<Snapshot, ApiError> {
         .query(&[("token", token)])
         .send()
         .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+        .map_err(net_err)?;
     let body: Value = resp
         .json()
         .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+        .map_err(net_err)?;
     parse_feed(&body)
 }
 
@@ -203,11 +209,11 @@ pub async fn search(cfg: &Config, keyword: &str) -> Result<Vec<StationHit>, ApiE
         .query(&[("token", token), ("keyword", keyword)])
         .send()
         .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+        .map_err(net_err)?;
     let body: Value = resp
         .json()
         .await
-        .map_err(|e| ApiError::Network(e.to_string()))?;
+        .map_err(net_err)?;
 
     let status = body.get("status").and_then(Value::as_str).unwrap_or("");
     if status != "ok" {
@@ -265,6 +271,21 @@ pub fn now_secs() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn network_errors_do_not_leak_the_token() {
+        // Nothing listens on port 9, so this fails after reqwest has already
+        // attached the URL — which carries the token — to the error.
+        let err = client()
+            .unwrap()
+            .get("http://127.0.0.1:9/feed/here/?token=SECRET-TOKEN")
+            .send()
+            .await
+            .unwrap_err();
+        let cleaned = net_err(err).to_string();
+        assert!(!cleaned.contains("SECRET-TOKEN"), "{cleaned}");
+        assert!(cleaned.starts_with("network-error:"), "{cleaned}");
+    }
 
     #[test]
     fn parses_a_normal_feed() {
