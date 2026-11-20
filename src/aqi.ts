@@ -42,6 +42,38 @@ export const categoryInk: Record<Category, string> = {
   unknown: "#ffffff",
 };
 
+/**
+ * Text-safe tones for the level words. The EPA fills are made for large
+ * areas: yellow on white and dark green on a dark panel both vanish. Mirrors
+ * `icons::text_color` on the Rust side so the preview matches the menu bar.
+ */
+export const categoryText: Record<Category, { light: string; dark: string }> = {
+  good: { light: "#10742f", dark: "#4cd96c" },
+  moderate: { light: "#8a5f00", dark: "#ffd60a" },
+  sensitive: { light: "#c45000", dark: "#ff9f2e" },
+  unhealthy: { light: "#c61b14", dark: "#ff695e" },
+  veryUnhealthy: { light: "#7a2e86", dark: "#c486cc" },
+  hazardous: { light: "#7e0023", dark: "#ff7a95" },
+  unknown: { light: "inherit", dark: "inherit" },
+};
+
+const CJK = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/;
+
+/**
+ * aqicn names stations "English (本地名)". Chinese and Japanese readers go by
+ * the local name; English keeps the whole feed string. Mirrors
+ * `tray::station_display`.
+ */
+export function stationDisplay(name: string | null | undefined, language: string): string {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed) return "";
+  const match = /^(.*?)[(（]([^()（）]+)[)）]$/.exec(trimmed);
+  const local = match?.[2]?.trim() ?? "";
+  if (!match || !local || !match[1].trim()) return trimmed;
+  if ((language === "zh-CN" || language === "ja") && CJK.test(local)) return local;
+  return trimmed;
+}
+
 const UNITS: Record<string, string> = {
   pm25: "µg/m³",
   pm10: "µg/m³",
@@ -118,8 +150,9 @@ export function trayText(
   snapshot: Snapshot | null,
   display: TrayDisplay,
   t: TFunction,
+  language: string,
 ): string {
-  const station = truncate((snapshot?.station ?? "").trim(), 18);
+  const station = truncate(stationDisplay(snapshot?.station, language), 18);
   const hit = metricText(snapshot, display.metric);
   const aqi = aqiValue(snapshot);
   const category = categoryOf(aqi);

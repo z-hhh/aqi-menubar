@@ -15,13 +15,40 @@ pub fn color_for(aqi: Option<i32>) -> [u8; 3] {
     }
 }
 
-/// A filled, antialiased circle used as the Windows tray icon. Windows cannot
-/// render text in the notification area, so the icon carries the category colour
-/// and the number lives in the tooltip and the panel.
-pub fn dot_image(color: [u8; 3], size: u32) -> Image<'static> {
+/// Menu bar text colours, one palette per appearance. The EPA fills are made
+/// for large areas, not for 13 pt type: yellow on white is unreadable and dark
+/// green on a dark menu bar disappears, so each band gets a text-safe tone.
+/// `None` means "leave the system label colour alone" (no reading yet).
+pub fn text_color(aqi: Option<i32>, dark: bool) -> Option<[u8; 3]> {
+    let level = Level::of(aqi);
+    Some(match (level, dark) {
+        (Level::Unknown, _) => return None,
+        (Level::Good, false) => [0x10, 0x74, 0x2f],
+        (Level::Good, true) => [0x4c, 0xd9, 0x6c],
+        (Level::Moderate, false) => [0x8a, 0x5f, 0x00],
+        (Level::Moderate, true) => [0xff, 0xd6, 0x0a],
+        (Level::Sensitive, false) => [0xc4, 0x50, 0x00],
+        (Level::Sensitive, true) => [0xff, 0x9f, 0x2e],
+        (Level::Unhealthy, false) => [0xc6, 0x1b, 0x14],
+        (Level::Unhealthy, true) => [0xff, 0x69, 0x5e],
+        (Level::VeryUnhealthy, false) => [0x7a, 0x2e, 0x86],
+        (Level::VeryUnhealthy, true) => [0xc4, 0x86, 0xcc],
+        (Level::Hazardous, false) => [0x7e, 0x00, 0x23],
+        (Level::Hazardous, true) => [0xff, 0x7a, 0x95],
+    })
+}
+
+/// A filled, antialiased circle used as the Windows tray icon and as the
+/// macOS menu bar dot. Windows cannot render text in the notification area, so
+/// there the icon carries the category colour and the number lives in the
+/// tooltip and the panel.
+///
+/// `diameter` is the fraction of the canvas the dot fills; the rest is the
+/// transparent margin AppKit's status button keeps around it.
+pub fn dot_image(color: [u8; 3], size: u32, diameter: f32) -> Image<'static> {
     let size_f = size as f32;
     let center = (size_f - 1.0) / 2.0;
-    let radius = size_f * 0.46;
+    let radius = size_f * (diameter / 2.0);
     let mut buf = vec![0u8; (size * size * 4) as usize];
 
     for y in 0..size {
@@ -58,8 +85,29 @@ mod tests {
     }
 
     #[test]
+    fn text_colours_differ_per_appearance_and_skip_a_missing_reading() {
+        assert_eq!(text_color(None, false), None);
+        assert_eq!(text_color(Some(-1), true), None);
+        // Light and dark palettes never coincide for a real band.
+        for aqi in [0, 80, 120, 180, 250, 400] {
+            let light = text_color(Some(aqi), false).unwrap();
+            let dark = text_color(Some(aqi), true).unwrap();
+            assert_ne!(light, dark, "aqi {aqi}");
+        }
+    }
+
+    #[test]
+    fn a_smaller_diameter_makes_a_lighter_dot() {
+        let solid = |d: f32| {
+            let img = dot_image([1, 2, 3], 36, d);
+            img.rgba().chunks(4).filter(|px| px[3] > 200).count()
+        };
+        assert!(solid(0.56) > solid(0.28), "the default dot should be visibly smaller");
+    }
+
+    #[test]
     fn dot_buffer_has_expected_shape() {
-        let img = dot_image([1, 2, 3], 32);
+        let img = dot_image([1, 2, 3], 32, 0.56);
         assert_eq!(img.width(), 32);
         assert_eq!(img.height(), 32);
         let raw = img.rgba();

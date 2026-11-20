@@ -74,6 +74,7 @@
     "trayCategory": "Show the level (AQI 51 · Moderate)",
     "trayStation": "Show the station name",
     "trayDot": "Colour dot",
+    "trayColorText": "Colour the text by level",
     "trayHint": "The menu bar changes as you toggle these.",
     "trayWindowsHint": "Windows shows only an icon in the notification area, so the number lives in the tooltip.",
     "trayPreview": "Menu bar preview",
@@ -84,7 +85,8 @@
     "updates": "Updates",
     "save": "Save",
     "saving": "Saving…",
-    "pickedFallback": "Selected station"
+    "pickedFallback": "Selected station",
+    "trayColorHint": "Off: the menu bar text uses the system colour. On: the number and level take the AQI colour (green, amber, red…)."
   },
   "update": {
     "check": "Check for updates",

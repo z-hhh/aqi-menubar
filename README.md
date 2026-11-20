@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/panel-en.png" width="300" alt="The panel: 82 AQI, moderate, Shanghai station, pollutant grid and data sources">
+  <img src="docs/screenshots/panel-en.png" width="300" alt="The panel: an AQI badge with its level, the station name, the pollutant grid and the data sources">
   &nbsp;&nbsp;
   <img src="docs/screenshots/settings-en.png" width="300" alt="Settings: token, location, menu bar options with a live preview, refresh interval, language, updates">
 </p>
@@ -51,7 +51,7 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
 
 | | |
 |---|---|
-| <img src="docs/screenshots/onboarding-en.png" width="250" alt="First run: a three-step token guide with Get a free token and I already have a token"> | <img src="docs/screenshots/panel-zh.png" width="250" alt="The panel in Chinese: AQI 82, 良, station details, pollutants and sources"> |
+| <img src="docs/screenshots/onboarding-en.png" width="250" alt="First run: a three-step token guide with Get a free token and I already have a token"> | <img src="docs/screenshots/panel-zh.png" width="250" alt="The panel in Chinese: the AQI badge with its level word, the station, pollutants and sources"> |
 | **First run.** Three steps to a free token; “I already have a token” jumps straight to the field. | **The panel in 中文.** Same layout, localized level words and units. |
 
 ## What it does
@@ -59,6 +59,8 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
 - **Menu bar / tray**: configurable. Pick the AQI number, the PM2.5 number, or just a
   coloured dot; add the `AQI` label, the quality level (`51 · 良`, `51 · Moderate`) and the
   station name or not. The level word follows the interface language and is on by default.
+  The text can take the level colour too, for a menu bar that reads at a glance without the
+  dot; station names use the local name in the parentheses in Chinese and Japanese.
   Settings shows a live preview of the result, and the change lands in the menu bar as you
   save. (Windows cannot render text in the notification area, so there the dot is the icon and
   the numbers plus the level live in the tooltip.)

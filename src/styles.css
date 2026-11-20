@@ -115,6 +115,18 @@ button {
   line-height: 1.25;
 }
 
+/* Only when "colour the text by level" is on; the tones are text-safe versions
+   of the category fills, one per appearance (see `categoryText`). */
+.category.colored {
+  color: var(--cat);
+}
+
+@media (prefers-color-scheme: dark) {
+  .category.colored {
+    color: var(--cat-dark);
+  }
+}
+
 .station {
   color: var(--muted);
   font-size: 12px;
@@ -261,6 +273,14 @@ button {
   font-size: 12px;
   color: var(--fg);
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-icon {
+  flex: 0 0 auto;
 }
 
 .ghost:hover {
@@ -631,6 +651,13 @@ body.mock-preview #root {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--cat, inherit);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tray-text {
+    color: var(--cat-dark, inherit);
+  }
 }
 
 /* ---- update banner ---- */

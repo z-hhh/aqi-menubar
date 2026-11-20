@@ -14,6 +14,8 @@ export interface TrayDisplay {
   showCategory: boolean;
   showStation: boolean;
   showIcon: boolean;
+  /** Draw the menu bar text in the level colour (macOS). */
+  colorText: boolean;
 }
 
 export interface Config {

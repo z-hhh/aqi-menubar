@@ -74,6 +74,7 @@
     "trayCategory": "显示质量等级（51 · 良）",
     "trayStation": "显示站点名",
     "trayDot": "彩色圆点",
+    "trayColorText": "文字按等级着色",
     "trayHint": "切换后菜单栏会立刻变化。",
     "trayWindowsHint": "Windows 通知区只能显示图标，数字放在悬浮提示里。",
     "trayPreview": "菜单栏预览",
@@ -84,7 +85,8 @@
     "updates": "更新",
     "save": "保存",
     "saving": "保存中…",
-    "pickedFallback": "已选站点"
+    "pickedFallback": "已选站点",
+    "trayColorHint": "关：菜单栏文字用系统颜色。开：数值和等级按 AQI 档位着色（绿、黄、红…）。"
   },
   "update": {
     "check": "检查更新",

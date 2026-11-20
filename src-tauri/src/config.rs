@@ -36,6 +36,10 @@ pub struct TrayDisplay {
     /// text in the notification area at all, so there the dot is the icon and
     /// this flag is ignored.
     pub show_icon: bool,
+    /// Draw the menu bar text itself in the level colour (macOS). Off by
+    /// default: the plain label colour is what every other menu bar app uses,
+    /// and purple-on-grey is not always legible.
+    pub color_text: bool,
 }
 
 impl Default for TrayDisplay {
@@ -46,6 +50,7 @@ impl Default for TrayDisplay {
             show_category: true,
             show_station: false,
             show_icon: true,
+            color_text: false,
         }
     }
 }
@@ -160,6 +165,7 @@ mod tests {
                 show_category: false,
                 show_station: true,
                 show_icon: false,
+                color_text: true,
             },
             ..Config::default()
         };

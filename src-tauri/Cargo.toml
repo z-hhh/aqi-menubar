@@ -1,6 +1,6 @@
 [package]
 name = "aqi-menubar"
-version = "0.1.0"
+version = "0.2.0"
 description = "Air Quality Index in your menu bar or system tray, powered by aqicn.org"
 edition = "2021"
 license = "MIT"
@@ -27,6 +27,24 @@ anyhow = "1"
 thiserror = "2"
 urlencoding = "2"
 sys-locale = "0.3"
+
+# Colouring the macOS status item text needs the raw AppKit objects; Tauri
+# only exposes the plain-string title. Versions track the ones Tauri already
+# links (tauri 2.12 -> tray-icon 0.25 -> objc2 0.6 / objc2-app-kit 0.3), so no
+# second copy of AppKit bindings is compiled in.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = [
+  "NSButton",
+  "NSControl",
+  "NSColor",
+  "NSFont",
+  "NSAttributedString",
+  "NSStatusItem",
+  "NSAppearance",
+  "objc2-core-foundation",
+] }
+objc2-foundation = { version = "0.3", features = ["NSString", "NSArray", "NSRange"] }
 
 [profile.release]
 codegen-units = 1

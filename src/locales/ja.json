@@ -74,6 +74,7 @@
     "trayCategory": "レベルを表示（51 · 普通）",
     "trayStation": "観測所名を表示",
     "trayDot": "カラードット",
+    "trayColorText": "文字をレベルで着色",
     "trayHint": "切り替えるとメニューバーがすぐに変わります。",
     "trayWindowsHint": "Windows の通知領域はアイコンしか表示できないため、数値はツールチップに表示されます。",
     "trayPreview": "メニューバーのプレビュー",
@@ -84,7 +85,8 @@
     "updates": "アップデート",
     "save": "保存",
     "saving": "保存中…",
-    "pickedFallback": "選択した観測所"
+    "pickedFallback": "選択した観測所",
+    "trayColorHint": "オフ：メニューバーの文字はシステム色。オン：数値とレベルが AQI の色（緑・黄・赤…）になります。"
   },
   "update": {
     "check": "アップデートを確認",

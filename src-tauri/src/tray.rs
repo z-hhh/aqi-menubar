@@ -13,6 +13,19 @@ use tauri::{
 };
 use tauri_plugin_positioner::{Position, WindowExt};
 
+/// The dot is drawn on a 36 px canvas that AppKit scales to an 18 pt status
+/// item, so 0.56 of the canvas is a ~10 pt dot: readable, but not a marble.
+#[cfg(target_os = "macos")]
+const DOT_CANVAS: u32 = 36;
+#[cfg(target_os = "macos")]
+const DOT_DIAMETER: f32 = 0.56;
+
+/// Windows draws the icon in a 16 px slot, so the fill is closer to the edges.
+#[cfg(not(target_os = "macos"))]
+const DOT_CANVAS: u32 = 32;
+#[cfg(not(target_os = "macos"))]
+const DOT_DIAMETER: f32 = 0.72;
+
 pub const TRAY_ID: &str = "main";
 pub const EVENT_OPEN_SETTINGS: &str = "aqi://open-settings";
 pub const EVENT_CHECK_UPDATES: &str = "aqi://check-updates";
@@ -118,6 +131,55 @@ pub struct TrayText {
     pub tooltip: String,
 }
 
+/// aqicn labels a station "English (本地名)", e.g. `Shanghai (上海)`. Split it
+/// so the menu bar can show the half its reader recognises. Full-width
+/// parentheses appear in some feeds, so both forms are handled.
+fn split_station(name: &str) -> (String, Option<String>) {
+    let trimmed = name.trim();
+    let (open_ch, close_ch) = if trimmed.contains('（') {
+        ('（', '）')
+    } else {
+        ('(', ')')
+    };
+    if let Some(open) = trimmed.rfind(open_ch) {
+        if trimmed.ends_with(close_ch) {
+            let base = trimmed[..open].trim().to_string();
+            let local = trimmed[open + open_ch.len_utf8()..trimmed.len() - close_ch.len_utf8()]
+                .trim()
+                .to_string();
+            if !local.is_empty() && !base.is_empty() {
+                return (base, Some(local));
+            }
+        }
+    }
+    (trimmed.to_string(), None)
+}
+
+fn has_cjk(s: &str) -> bool {
+    s.chars().any(|c| {
+        matches!(c as u32,
+            0x3040..=0x30FF     // kana
+            | 0x3400..=0x4DBF   // CJK ext A
+            | 0x4E00..=0x9FFF   // CJK unified
+            | 0xF900..=0xFAFF   // compatibility ideographs
+        )
+    })
+}
+
+/// The station name as the menu bar and the panel show it. Chinese and
+/// Japanese readers go by the local name in the parentheses; English keeps the
+/// Latin one, because that is what the feed spells the place as.
+pub fn station_display(name: &str, lang: &str) -> String {
+    let trimmed = name.trim();
+    let (base, local) = split_station(trimmed);
+    match local {
+        Some(local) if matches!(lang, "zh-CN" | "ja") && has_cjk(&local) => local,
+        // A Latin reader gets the whole feed string, local name included.
+        Some(_) => trimmed.to_string(),
+        None => base,
+    }
+}
+
 fn truncate_chars(s: &str, max: usize) -> String {
     if s.chars().count() <= max {
         return s.to_string();
@@ -159,8 +221,9 @@ fn metric_text(snap: &Snapshot, metric: &str) -> Option<(String, &'static str)> 
 pub fn texts(snap: &Snapshot, display: &TrayDisplay, lang: &str) -> TrayText {
     // The title is a menu bar, not a page: keep the station short there and
     // let the tooltip carry the full name.
-    let station = truncate_chars(snap.station.trim(), 18);
-    let tooltip_station = truncate_chars(snap.station.trim(), 48);
+    let shown = station_display(&snap.station, lang);
+    let station = truncate_chars(&shown, 18);
+    let tooltip_station = truncate_chars(&shown, 48);
     let pm25 = code_value(snap, "pm25").map(|v| format!("PM2.5 {}", v.round() as i64));
     let aqi = aqi_value(snap);
 
@@ -236,19 +299,19 @@ pub fn update(app: &AppHandle, snap: &Snapshot, display: &TrayDisplay, lang: &st
 
     #[cfg(target_os = "macos")]
     {
-        // An 18 pt dot sits comfortably beside the text in a 22 pt menu bar.
         if display.show_icon {
-            let _ = tray.set_icon(Some(icons::dot_image(color, 18)));
+            let _ = tray.set_icon(Some(icons::dot_image(color, DOT_CANVAS, DOT_DIAMETER)));
         } else {
             let _ = tray.set_icon(None::<tauri::image::Image>);
         }
         let _ = tray.set_title(Some(text.title.as_str()));
+        paint_title(&tray, &text.title, snap.aqi, display.color_text);
         let _ = tray.set_tooltip(Some(text.tooltip.as_str()));
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = tray.set_icon(Some(icons::dot_image(color, 32)));
+        let _ = tray.set_icon(Some(icons::dot_image(color, DOT_CANVAS, DOT_DIAMETER)));
         let _ = tray.set_tooltip(Some(text.tooltip.as_str()));
     }
 }
@@ -260,18 +323,151 @@ pub fn clear(app: &AppHandle, display: &TrayDisplay, _lang: &str) {
     #[cfg(target_os = "macos")]
     {
         if display.show_icon {
-            let _ = tray.set_icon(Some(icons::dot_image(icons::color_for(None), 18)));
+            let _ = tray.set_icon(Some(icons::dot_image(
+                icons::color_for(None),
+                DOT_CANVAS,
+                DOT_DIAMETER,
+            )));
         } else {
             let _ = tray.set_icon(None::<tauri::image::Image>);
         }
         let _ = tray.set_title(Some("–"));
+        paint_title(&tray, "–", None, false);
         let _ = tray.set_tooltip(Some("AQI –"));
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = tray.set_icon(Some(icons::dot_image(icons::color_for(None), 32)));
+        let _ = tray.set_icon(Some(icons::dot_image(
+            icons::color_for(None),
+            DOT_CANVAS,
+            DOT_DIAMETER,
+        )));
         let _ = tray.set_tooltip(Some("AQI –"));
     }
+}
+
+/// Repaint the status item's title. `set_title` installs a plain string; on
+/// macOS the only way to give the *text* a colour is an attributed title, so
+/// the same string is rebuilt with the level colour (or the system label
+/// colour when the option is off). Windows has no menu bar text at all.
+#[cfg(target_os = "macos")]
+fn paint_title(tray: &tauri::tray::TrayIcon, title: &str, aqi: Option<i32>, colored: bool) {
+    let title = title.to_string();
+    let res = tray.with_inner_tray_icon(move |inner| {
+        let Some(item) = inner.ns_status_item() else {
+            return;
+        };
+        let Some(mtm) = objc2::MainThreadMarker::new() else {
+            return;
+        };
+        let Some(button) = item.button(mtm) else {
+            return;
+        };
+        macos_text::paint(&button, &title, aqi, colored);
+    });
+    if let Err(err) = res {
+        #[cfg(debug_assertions)]
+        eprintln!("tray: painting the title failed: {err}");
+        let _ = err;
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod macos_text {
+    use crate::icons;
+    use objc2_app_kit::{
+        NSAppearanceCustomization, NSButton, NSColor, NSFontAttributeName,
+        NSForegroundColorAttributeName,
+    };
+    use objc2_foundation::{NSAttributedString, NSMutableAttributedString, NSRange, NSString};
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::{AnyThread, Message};
+
+    /// Objective-C attribute values are untyped (`AnyObject`); hand AppKit the
+    /// object pointer itself, not the Rust wrapper around it.
+    fn any<T: Message>(value: &Retained<T>) -> &AnyObject {
+        unsafe { &*(Retained::as_ptr(value) as *const AnyObject) }
+    }
+
+    pub fn paint(button: &NSButton, title: &str, aqi: Option<i32>, colored: bool) {
+        // The menu bar goes dark with the system appearance; a colour that
+        // reads on white is invisible on it, so the palette follows along.
+        let dark = button.effectiveAppearance().name().to_string().contains("Dark");
+        let rgb = if colored {
+            icons::text_color(aqi, dark)
+        } else {
+            None
+        };
+
+        let text = NSString::from_str(title);
+        let base = NSAttributedString::initWithString(NSAttributedString::alloc(), &text);
+        let attributed = NSMutableAttributedString::initWithAttributedString(
+            NSMutableAttributedString::alloc(),
+            &base,
+        );
+        let range = NSRange::new(0, attributed.length());
+        if range.length > 0 {
+            if let Some(font) = button.font() {
+                unsafe { attributed.addAttribute_value_range(NSFontAttributeName, any(&font), range) };
+            }
+            let color = match rgb {
+                Some([r, g, b]) => NSColor::colorWithSRGBRed_green_blue_alpha(
+                    f64::from(r) / 255.0,
+                    f64::from(g) / 255.0,
+                    f64::from(b) / 255.0,
+                    1.0,
+                ),
+                None => NSColor::labelColor(),
+            };
+            unsafe {
+                attributed.addAttribute_value_range(NSForegroundColorAttributeName, any(&color), range)
+            };
+        }
+        button.setAttributedTitle(&attributed);
+        #[cfg(debug_assertions)]
+        report(button, title, rgb);
+    }
+
+    /// Read the colour back out of the status item. A screenshot of the menu
+    /// bar is not always possible (locked screen, auto-hidden bar), and this is
+    /// the stronger check anyway: it shows what AppKit actually kept.
+    ///
+    /// Never ask a system colour for its components: `labelColor` is dynamic
+    /// and raises for `getRed:green:blue:alpha:`.
+    #[cfg(debug_assertions)]
+    fn report(button: &NSButton, title: &str, expected: Option<[u8; 3]>) {
+        unsafe {
+            let read = button.attributedTitle();
+            let value = read.attribute_atIndex_effectiveRange(
+                NSForegroundColorAttributeName,
+                0,
+                std::ptr::null_mut(),
+            );
+            let Some(color) = value.and_then(|v| v.downcast_ref::<NSColor>().map(|c| c.retain()))
+            else {
+                eprintln!("tray: text={title:?} colour=<missing>");
+                return;
+            };
+            match expected {
+                None => eprintln!("tray: text={title:?} colour=system label colour"),
+                Some(want) => {
+                    let (mut r, mut g, mut b, mut a) = (0.0, 0.0, 0.0, 0.0);
+                    color.getRed_green_blue_alpha(&mut r, &mut g, &mut b, &mut a);
+                    let got = [
+                        (r.clamp(0.0, 1.0) * 255.0).round() as u8,
+                        (g.clamp(0.0, 1.0) * 255.0).round() as u8,
+                        (b.clamp(0.0, 1.0) * 255.0).round() as u8,
+                    ];
+                    eprintln!(
+                        "tray: text={title:?} colour=#{:02x}{:02x}{:02x} expected=#{:02x}{:02x}{:02x} match={}",
+                        got[0], got[1], got[2], want[0], want[1], want[2], got == want
+                    );
+                }
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]
@@ -307,6 +503,7 @@ mod tests {
             show_category: false,
             show_station: station,
             show_icon: icon,
+            color_text: false,
         }
     }
 
@@ -328,14 +525,8 @@ mod tests {
             ..TrayDisplay::default()
         };
         let reading = snap(Some(51), "Shanghai (上海)", Some(12.3));
-        assert_eq!(
-            texts(&reading, &d, "zh-CN").title,
-            "51 · 良 · Shanghai (上海)"
-        );
-        assert_eq!(
-            texts(&reading, &d, "ja").title,
-            "51 · 普通 · Shanghai (上海)"
-        );
+        assert_eq!(texts(&reading, &d, "zh-CN").title, "51 · 良 · 上海");
+        assert_eq!(texts(&reading, &d, "ja").title, "51 · 普通 · 上海");
         assert_eq!(
             texts(&reading, &d, "en").title,
             "51 · Moderate · Shanghai (上海)"
@@ -356,6 +547,7 @@ mod tests {
             show_category: true,
             show_station: true,
             show_icon: true,
+            color_text: false,
         };
         let t = texts(&snap(Some(178), "Shanghai (上海)", Some(120.0)), &d, "en");
         assert_eq!(t.title, "AQI 178 · Unhealthy · Shanghai (上海)");
@@ -424,6 +616,20 @@ mod tests {
         let t = texts(&snap(None, "", None), &TrayDisplay::default(), "en");
         assert_eq!(t.title, "–");
         assert_eq!(t.tooltip, "AQI –");
+    }
+
+    #[test]
+    fn chinese_and_japanese_read_the_name_in_parentheses() {
+        assert_eq!(station_display("Shanghai (上海)", "zh-CN"), "上海");
+        assert_eq!(station_display("Tokyo (東京)", "ja"), "東京");
+        assert_eq!(station_display("Shanghai (上海)", "en"), "Shanghai (上海)");
+        assert_eq!(station_display("Jing'an", "zh-CN"), "Jing'an");
+        // A Latin local name is no better than the base one.
+        assert_eq!(station_display("Pudong (Pudong)", "zh-CN"), "Pudong (Pudong)");
+        // Full-width parentheses turn up in some feeds.
+        assert_eq!(station_display("Osaka（大阪）", "zh-CN"), "大阪");
+        assert_eq!(station_display("", "zh-CN"), "");
+        assert_eq!(station_display("  X  ", "en"), "X");
     }
 
     #[test]

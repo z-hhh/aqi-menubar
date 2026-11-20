@@ -54,6 +54,8 @@ async fn poll_loop(app: AppHandle, state: Arc<AppState>) {
                     tray::update(&app, &snapshot, &cfg.tray, &cfg.resolved_language());
                 }
                 Err(err) => {
+                    #[cfg(debug_assertions)]
+                    eprintln!("poll: fetch failed: {err}");
                     // Keep the last reading visible but mark it stale.
                     if let Some(last) = state.snapshot.lock().unwrap().as_mut() {
                         last.stale = true;

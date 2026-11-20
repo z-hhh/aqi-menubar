@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/panel-zh.png" width="300" alt="面板：AQI 82、良、上海站点、污染物数值与数据来源">
+  <img src="docs/screenshots/panel-zh.png" width="300" alt="面板：AQI 徽标与等级、站点名、污染物数值与数据来源">
   &nbsp;&nbsp;
   <img src="docs/screenshots/settings-zh.png" width="300" alt="设置：token、监测位置、菜单栏显示（带实时预览）、刷新间隔、语言、更新">
 </p>
@@ -49,14 +49,15 @@ macOS 包是 ad-hoc 签名、未做公证，所以第一次打开系统会拦一
 
 | | |
 |---|---|
-| <img src="docs/screenshots/onboarding-zh.png" width="250" alt="首次启动：三步拿到免费 token，可点「获取免费 token」或「我已经有 token」"> | <img src="docs/screenshots/panel-en.png" width="250" alt="英文界面面板：AQI 82、Moderate，站点、污染物与数据来源"> |
+| <img src="docs/screenshots/onboarding-zh.png" width="250" alt="首次启动：三步拿到免费 token，可点「获取免费 token」或「我已经有 token」"> | <img src="docs/screenshots/panel-en.png" width="250" alt="英文界面面板：AQI 徽标与等级、站点、污染物与数据来源"> |
 | **首次启动。** 三步拿到免费 token；「我已经有 token」直接跳到输入框。 | **英文界面。** 同一套布局，等级词、单位和文案随语言切换。 |
 
 ## 功能
 
 - **菜单栏／通知区**：可配置。数值可选 AQI、PM2.5，或只留彩色圆点；文字可选加 `AQI` 名称、加质量等级
-  （`51 · 良`、`51 · Moderate`）、加站点名。等级词跟随界面语言，默认开启。设置页有实时预览，改完立刻反映到
-  菜单栏。（Windows 的通知区不能显示文字，所以那边圆点就是图标，数值和等级放在悬浮提示里。）
+  （`51 · 良`、`51 · Moderate`）、加站点名。等级词跟随界面语言，默认开启。文字还可以按等级着色（不开就是
+  系统颜色），不要圆点也一眼可读；站点名在中／日界面优先取括号里的本地名（`Shanghai (上海)` → `上海`）。
+  设置页有实时预览，改完立刻反映到菜单栏。（Windows 的通知区不能显示文字，所以那边圆点就是图标，数值和等级放在悬浮提示里。）
 - **面板**（点菜单栏图标）：AQI 徽标与等级、站点名、站点读数时间、PM2.5 / PM10 / O₃ / NO₂ / SO₂ / CO、
   首要污染物、温度、湿度、风速，以及上游全部数据来源的可点击链接。
 - **监测位置**：自动（aqicn 按 IP 判断）、城市或站点名，或从搜索结果里指定某个站点。

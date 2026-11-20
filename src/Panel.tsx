@@ -1,7 +1,16 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
-import { categoryColor, categoryInk, categoryOf, formatTemp, readingTime, unitOf } from "./aqi";
+import {
+  categoryColor,
+  categoryInk,
+  categoryOf,
+  categoryText,
+  formatTemp,
+  readingTime,
+  stationDisplay,
+  unitOf,
+} from "./aqi";
 import { bridge } from "./bridge";
 import type { AppState, Pollutant } from "./types";
 
@@ -11,6 +20,43 @@ export const TOKEN_URL = "https://aqicn.org/data-platform/token/";
 interface Props {
   state: AppState;
   onOpenSettings: (focusToken?: boolean) => void;
+}
+
+/**
+ * The footer used to draw "⟳" and "⚙" in the running text, which renders at
+ * roughly 9 px next to 12 px labels. These are drawn at a fixed 13 px so they
+ * line up with the text and keep their weight on both platforms.
+ */
+function RefreshIcon() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+      <path
+        d="M13.4 8a5.4 5.4 0 1 1-1.6-3.83"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13.5 2.4v3.7h-3.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg className="btn-icon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+      <path d="M2 4.5h7M12.6 4.5H14M2 11.5h1.4M7 11.5h7" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="10.8" cy="4.5" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="5.2" cy="11.5" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
 }
 
 export function open(url: string) {
@@ -138,9 +184,21 @@ export default function Panel({ state, onOpenSettings }: Props) {
           <span className="badge-label">AQI</span>
         </div>
         <div className="head-text">
-          <div className="category">{t(`aqi.${category}`)}</div>
+          <div
+            className={state.config.tray.colorText ? "category colored" : "category"}
+            style={
+              state.config.tray.colorText
+                ? ({
+                    "--cat": categoryText[category].light,
+                    "--cat-dark": categoryText[category].dark,
+                  } as CSSProperties)
+                : undefined
+            }
+          >
+            {t(`aqi.${category}`)}
+          </div>
           <div className="station" title={snapshot?.station}>
-            {snapshot?.station || "—"}
+            {stationDisplay(snapshot?.station, state.resolvedLanguage) || "—"}
           </div>
           <div className="updated">
             {snapshot?.updated
@@ -207,10 +265,10 @@ export default function Panel({ state, onOpenSettings }: Props) {
           onClick={() => void bridge.refreshNow()}
           title={t("panel.refresh")}
         >
-          ⟳ {t("panel.refresh")}
+          <RefreshIcon /> {t("panel.refresh")}
         </button>
         <button type="button" className="ghost" onClick={() => onOpenSettings()}>
-          ⚙ {t("panel.settings")}
+          <SettingsIcon /> {t("panel.settings")}
         </button>
       </footer>
     </div>

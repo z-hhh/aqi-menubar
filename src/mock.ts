@@ -33,6 +33,7 @@ function baseConfig(): Config {
       showCategory: params.get("level") !== "0",
       showStation: params.get("station") === "1",
       showIcon: params.get("dot") !== "0",
+      colorText: params.get("color") === "1",
     },
   };
 }

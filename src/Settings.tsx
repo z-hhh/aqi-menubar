@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
-import { categoryColor, categoryOf, trayText } from "./aqi";
+import { categoryColor, categoryOf, categoryText, trayText } from "./aqi";
 import { bridge } from "./bridge";
 import { TOKEN_URL } from "./Panel";
 import type { AppState, Location, StationHit, TrayDisplay } from "./types";
@@ -119,7 +119,8 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   }
 
   const category = categoryOf(state.snapshot?.aqi ?? null);
-  const preview = trayText(state.snapshot, tray, t);
+  const preview = trayText(state.snapshot, tray, t, state.resolvedLanguage);
+  const previewColor = tray.colorText ? categoryText[category] : null;
 
   return (
     <div className="panel settings">
@@ -241,7 +242,18 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
               aria-hidden="true"
             />
           )}
-          {preview && <span className="tray-text">{preview}</span>}
+          {preview && (
+            <span
+              className="tray-text"
+              style={
+                previewColor
+                  ? ({ "--cat": previewColor.light, "--cat-dark": previewColor.dark } as CSSProperties)
+                  : undefined
+              }
+            >
+              {preview}
+            </span>
+          )}
         </div>
 
         <select
@@ -287,6 +299,19 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
             />
             <span>{t("settings.trayDot")}</span>
           </label>
+        )}
+        {!isWindows && (
+          <>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={tray.colorText}
+                onChange={(e) => changeTray({ colorText: e.target.checked })}
+              />
+              <span>{t("settings.trayColorText")}</span>
+            </label>
+            <span className="hint">{t("settings.trayColorHint")}</span>
+          </>
         )}
         <span className="hint">{isWindows ? t("settings.trayWindowsHint") : t("settings.trayHint")}</span>
       </div>
