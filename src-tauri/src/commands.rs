@@ -65,20 +65,32 @@ pub fn save_config(
     state: State<'_, Arc<AppState>>,
     mut next: Config,
 ) -> Result<AppStateDto, String> {
-    // The settings screen never sees the saved token, so it does not send one
-    // back: keep what is already stored instead of blanking it.
-    next.keep_token_from(&state.config.lock().unwrap());
+    let previous = {
+        let stored = state.config.lock().unwrap();
+        // The settings screen never sees the saved token, so it does not send
+        // one back: keep what is already stored instead of blanking it.
+        next.keep_token_from(&stored);
+        stored.clone()
+    };
     next.save(&app).map_err(|e| e.to_string())?;
     *state.config.lock().unwrap() = next.clone();
     tray::refresh_menu(&app, &next);
     // Apply the tray display change right away instead of waiting for the
-    // next poll, so the menu bar reacts the moment the user saves.
+    // next poll, so the menu bar reacts the moment the user edits a setting.
     let lang = next.resolved_language();
     match state.snapshot.lock().unwrap().as_ref() {
         Some(snapshot) => tray::update(&app, snapshot, &next.tray, &lang),
         None => tray::clear(&app, &next.tray, &lang),
     }
-    state.notify.notify_one();
+    // Settings save as you edit them. A display-only change is already on
+    // screen above, so only a new location, interval or token needs a fetch —
+    // otherwise every checkbox would spend a call against the aqicn limit.
+    if previous.location != next.location
+        || previous.refresh_minutes != next.refresh_minutes
+        || previous.token != next.token
+    {
+        state.notify.notify_one();
+    }
     Ok(dto(state.inner()))
 }
 

@@ -4,22 +4,42 @@ import { useTranslation } from "react-i18next";
 import { categoryColor, categoryOf, categoryText, trayText } from "./aqi";
 import { bridge } from "./bridge";
 import { TOKEN_URL } from "./Panel";
-import type { AppState, Location, StationHit, TrayDisplay } from "./types";
+import type { AppState, Location, SaveConfig, StationHit, TrayDisplay } from "./types";
 
 interface Props {
   state: AppState;
   /** Open with the token field focused (the onboarding "I have a token" path). */
   focusToken?: boolean;
+  /** Called after each auto-save with the state the backend returned. */
   onSaved: (next: AppState) => void;
   onBack: () => void;
+}
+
+/** Quiet period after the last edit before it is written. Short enough to feel
+ *  immediate, long enough that a typed city name is not saved letter by letter. */
+const AUTOSAVE_DELAY_MS = 400;
+/** How long "Saved" stays in the header. */
+const SAVED_FLASH_MS = 1600;
+
+function locationOf(mode: "here" | "city", query: string): Location {
+  return mode === "here" ? { kind: "here" } : { kind: "city", query: query.trim() };
+}
+
+/** Everything that can make the screen differ from what is stored. The token is
+ *  left out: a typed token is always written, the rest only when it changed. */
+function signature(payload: SaveConfig): string {
+  return JSON.stringify({
+    location: payload.location,
+    refreshMinutes: payload.refreshMinutes,
+    language: payload.language,
+    tray: payload.tray,
+  });
 }
 
 export default function Settings({ state, focusToken = false, onSaved, onBack }: Props) {
   const { t } = useTranslation();
   const initial = state.config;
   const isWindows = state.platform === "windows";
-  /** A token is already stored; it is never shown, so the field starts empty. */
-  const saved = state.tokenSet;
 
   const initialMode = initial.location.kind === "city" || initial.location.kind === "station"
     ? "city"
@@ -42,25 +62,104 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   const [picked, setPicked] = useState<string | null>(
     initial.location.kind === "station" ? t("settings.pickedFallback") : null,
   );
+  const [tokenSet, setTokenSet] = useState(state.tokenSet);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [checked, setChecked] = useState<"idle" | "busy" | "none">("idle");
 
   const tokenRef = useRef<HTMLInputElement>(null);
-  /** Set once the form is saved, so leaving does not undo the new setting. */
-  const committed = useRef(false);
+  /** The token field has focus, so a freshly saved token may stay in it. */
+  const tokenFocused = useRef(false);
+  /** The token value the last successful save wrote, so leaving the field can
+   *  clear it without asking the backend. */
+  const writtenToken = useRef("");
+  /** The edit waiting for the debounce to run out — also flushed on leaving. */
+  const pending = useRef<SaveConfig | null>(null);
+  /** The edit that failed, so the retry link has something to send again. */
+  const failed = useRef<SaveConfig | null>(null);
+  const alive = useRef(true);
+  const writeRef = useRef<(payload: SaveConfig) => void>(() => undefined);
+  /** What the settings screen opened with. Opening is not an edit: a screen
+   *  that still shows these values has nothing to write. */
+  const known = useRef(
+    signature({
+      location: locationOf(initialMode, initialQuery),
+      refreshMinutes: initial.refreshMinutes,
+      language: initial.language,
+      tray: initial.tray,
+    }),
+  );
 
   useEffect(() => {
     if (focusToken) tokenRef.current?.focus();
   }, [focusToken]);
 
-  // Changing the display options shows up in the real menu bar immediately;
-  // leaving without saving puts the saved setting back.
   useEffect(() => {
-    return () => {
-      if (!committed.current) void bridge.previewTray(initial.tray);
+    if (status !== "saved") return;
+    const id = window.setTimeout(() => {
+      if (alive.current) setStatus("idle");
+    }, SAVED_FLASH_MS);
+    return () => window.clearTimeout(id);
+  }, [status]);
+
+  async function write(payload: SaveConfig) {
+    setStatus("saving");
+    const typed = payload.token?.trim();
+    try {
+      const next = await bridge.saveConfig(payload);
+      known.current = signature(payload);
+      if (typed) writtenToken.current = typed;
+      failed.current = null;
+      if (!alive.current) return;
+      setTokenSet(next.tokenSet);
+      setError(null);
+      setStatus("saved");
+      onSaved(next);
+      // A saved token does not stay on screen once the field is left alone.
+      if (typed && !tokenFocused.current) setToken("");
+    } catch (err) {
+      failed.current = payload;
+      if (!alive.current) return;
+      setError(String(err));
+      setStatus("error");
+    }
+  }
+  writeRef.current = (payload) => void write(payload);
+
+  useEffect(() => {
+    // Nothing to keep for a city that was emptied: the stored location stays.
+    if (mode === "city" && !query.trim()) return;
+
+    const typed = token.trim();
+    const payload: SaveConfig = {
+      ...(typed ? { token: typed } : {}),
+      location: locationOf(mode, query),
+      refreshMinutes: refresh,
+      language,
+      tray,
     };
+    // Same as what is already stored (or untouched since opening): no write.
+    if (!typed && signature(payload) === known.current) return;
+
+    pending.current = payload;
+    const id = window.setTimeout(() => {
+      pending.current = null;
+      writeRef.current(payload);
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(id);
+    // writeRef carries the latest render's write without re-scheduling on it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, mode, query, refresh, language, tray]);
+
+  // Leaving with an edit still inside its quiet period writes it before the
+  // screen goes away, so "change and close" loses nothing.
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      const tail = pending.current;
+      if (tail) void bridge.saveConfig(tail).catch(() => undefined);
+    };
   }, []);
 
   function changeTray(patch: Partial<TrayDisplay>) {
@@ -73,48 +172,12 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
     const term = query.trim();
     if (!term) return;
     setSearching(true);
-    setError(null);
     try {
       setHits(await bridge.searchStations(term));
     } catch (err) {
       setError(String(err));
     } finally {
       setSearching(false);
-    }
-  }
-
-  async function save() {
-    if (!token.trim() && !saved) {
-      setError(t("settings.tokenNeeded"));
-      tokenRef.current?.focus();
-      return;
-    }
-    const location: Location =
-      mode === "here" ? { kind: "here" } : { kind: "city", query: query.trim() };
-    if (mode === "city" && !query.trim()) {
-      setError(t("settings.locationNeeded"));
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    try {
-      // Only a freshly typed token is sent: the saved one is kept by the
-      // backend, and the field is cleared again so it is not left on screen.
-      const typed = token.trim();
-      const next = await bridge.saveConfig({
-        ...(typed ? { token: typed } : {}),
-        location,
-        refreshMinutes: refresh,
-        language,
-        tray,
-      });
-      committed.current = true;
-      setToken("");
-      onSaved(next);
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -136,9 +199,32 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
         </button>
         <span className="bar-title">{t("settings.title")}</span>
         <span className="bar-spacer" />
+        <span className={`save-state ${status}`} aria-live="polite">
+          {status === "saving"
+            ? t("settings.saving")
+            : status === "saved"
+              ? t("settings.saved")
+              : null}
+        </span>
       </header>
 
-      {!saved && (
+      {error && (
+        <p className="save-error" role="alert">
+          <span>{t("settings.saveFailed", { error })}</span>
+          <button
+            type="button"
+            className="link inline"
+            onClick={() => {
+              const again = failed.current;
+              if (again) writeRef.current(again);
+            }}
+          >
+            {t("settings.retry")}
+          </button>
+        </p>
+      )}
+
+      {!tokenSet && (
         <div className="callout">
           <p className="callout-text">{t("settings.tokenGuide")}</p>
           <button type="button" className="primary small" onClick={() => open(TOKEN_URL)}>
@@ -161,14 +247,21 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
           autoCapitalize="off"
           autoCorrect="off"
           placeholder={
-            saved && !token
-              ? t("settings.tokenSavedPlaceholder")
-              : t("settings.tokenPlaceholder")
+            tokenSet ? t("settings.tokenSavedPlaceholder") : t("settings.tokenPlaceholder")
           }
           onChange={(e) => setToken(e.target.value)}
+          onFocus={() => {
+            tokenFocused.current = true;
+          }}
+          onBlur={() => {
+            tokenFocused.current = false;
+            // Only a token that is already stored is cleared: an edit still in
+            // its quiet period stays visible until it is written.
+            if (token.trim() && token.trim() === writtenToken.current) setToken("");
+          }}
         />
         <span className="hint" id="token-hint">
-          {saved && !token ? t("settings.tokenSavedHint") : t("settings.tokenHint")}{" "}
+          {tokenSet ? t("settings.tokenSavedHint") : t("settings.tokenHint")}{" "}
           <button type="button" className="link inline" onClick={() => open(TOKEN_URL)}>
             aqicn.org
           </button>
@@ -375,12 +468,6 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
               : t("update.autoHint")}
         </span>
       </div>
-
-      {error && <p className="error">{error}</p>}
-
-      <button type="button" className="primary wide" disabled={busy} onClick={() => void save()}>
-        {busy ? t("settings.saving") : t("settings.save")}
-      </button>
     </div>
   );
 }

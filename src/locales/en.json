@@ -56,9 +56,8 @@
     "tokenPlaceholder": "Paste your token",
     "tokenHint": "Free and instant. Get one at",
     "tokenSavedPlaceholder": "Saved · leave empty to keep",
-    "tokenSavedHint": "A saved token is never shown again. Leave this empty to keep it, or paste a new one to replace it.",
+    "tokenSavedHint": "A saved token is never shown again. Paste a new one to replace it; leaving the field empty keeps it.",
     "tokenGuide": "No token yet? It's free and takes about ten seconds — the token is emailed to you.",
-    "tokenNeeded": "A token is required.",
     "location": "Location",
     "locHere": "Automatic (by IP)",
     "locCity": "City or station",
@@ -66,7 +65,6 @@
     "search": "Search",
     "searching": "Searching…",
     "searchHint": "Press Search to look up stations, then pick one.",
-    "locationNeeded": "Enter a city or pick a station.",
     "tray": "Menu bar",
     "trayMetric": "Show in the menu bar",
     "trayAqi": "AQI",
@@ -85,10 +83,12 @@
     "language": "Language",
     "langAuto": "Match system",
     "updates": "Updates",
-    "save": "Save",
     "saving": "Saving…",
     "pickedFallback": "Selected station",
-    "trayColorHint": "Off: the menu bar text uses the system colour. On: the number and level take the AQI colour (green, amber, red…)."
+    "trayColorHint": "Off: the menu bar text uses the system colour. On: the number and level take the AQI colour (green, amber, red…).",
+    "saved": "Saved",
+    "saveFailed": "Couldn't save: {{error}}",
+    "retry": "Retry"
   },
   "update": {
     "check": "Check for updates",

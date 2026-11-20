@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 /// Where the AQI is read from.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Location {
     /// aqicn resolves the location from the caller's IP address.

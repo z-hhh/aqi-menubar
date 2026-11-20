@@ -56,9 +56,8 @@
     "tokenPlaceholder": "トークンを貼り付け",
     "tokenHint": "無料ですぐ取得できます:",
     "tokenSavedPlaceholder": "保存済み · 空欄なら変更なし",
-    "tokenSavedHint": "保存したトークンは再表示されません。空欄のまま保存すれば変更されません。新しいトークンを貼り付けると置き換わります。",
+    "tokenSavedHint": "保存したトークンは再表示されません。新しいものを貼り付けると置き換わり、空欄のままなら変更されません。",
     "tokenGuide": "トークンがまだない場合、無料で10秒ほどで取得できます。メールで届きます。",
-    "tokenNeeded": "トークンが必要です。",
     "location": "観測地点",
     "locHere": "自動（IP から）",
     "locCity": "都市・観測所を指定",
@@ -66,7 +65,6 @@
     "search": "検索",
     "searching": "検索中…",
     "searchHint": "「検索」を押して観測所を探し、選択してください。",
-    "locationNeeded": "都市を入力するか観測所を選んでください。",
     "tray": "メニューバー",
     "trayMetric": "メニューバーに表示",
     "trayAqi": "AQI",
@@ -85,10 +83,12 @@
     "language": "言語",
     "langAuto": "システムに合わせる",
     "updates": "アップデート",
-    "save": "保存",
     "saving": "保存中…",
     "pickedFallback": "選択した観測所",
-    "trayColorHint": "オフ：メニューバーの文字はシステム色。オン：数値とレベルが AQI の色（緑・黄・赤…）になります。"
+    "trayColorHint": "オフ：メニューバーの文字はシステム色。オン：数値とレベルが AQI の色（緑・黄・赤…）になります。",
+    "saved": "保存しました",
+    "saveFailed": "保存できませんでした：{{error}}",
+    "retry": "再試行"
   },
   "update": {
     "check": "アップデートを確認",

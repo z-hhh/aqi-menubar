@@ -363,6 +363,25 @@ button {
   font-weight: 600;
 }
 
+/* Settings autosaves, so the header carries the only status line. */
+.save-state {
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.save-state.saved {
+  color: var(--accent);
+}
+
+.save-error {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: var(--danger);
+  font-size: 11px;
+}
+
 .field {
   display: flex;
   flex-direction: column;

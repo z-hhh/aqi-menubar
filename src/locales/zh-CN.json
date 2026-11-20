@@ -56,9 +56,8 @@
     "tokenPlaceholder": "粘贴你的 token",
     "tokenHint": "免费、即时申请，在这里获取：",
     "tokenSavedPlaceholder": "已保存 · 留空不修改",
-    "tokenSavedHint": "已保存的 token 不会再显示。留空保存则保持不变；粘贴新 token 可以替换。",
+    "tokenSavedHint": "已保存的 token 不会再显示。粘贴新 token 会自动替换；留空则保持不变。",
     "tokenGuide": "还没有 token？免费申请，十秒搞定，token 直接发到你的邮箱。",
-    "tokenNeeded": "必须填写 token。",
     "location": "监测位置",
     "locHere": "自动（按 IP）",
     "locCity": "指定城市或站点",
@@ -66,7 +65,6 @@
     "search": "搜索",
     "searching": "搜索中…",
     "searchHint": "点“搜索”查找监测站，然后选一个。",
-    "locationNeeded": "请填写城市或选择一个站点。",
     "tray": "菜单栏",
     "trayMetric": "菜单栏显示",
     "trayAqi": "AQI 指数",
@@ -85,10 +83,12 @@
     "language": "语言",
     "langAuto": "跟随系统",
     "updates": "更新",
-    "save": "保存",
     "saving": "保存中…",
     "pickedFallback": "已选站点",
-    "trayColorHint": "关：菜单栏文字用系统颜色。开：数值和等级按 AQI 档位着色（绿、黄、红…）。"
+    "trayColorHint": "关：菜单栏文字用系统颜色。开：数值和等级按 AQI 档位着色（绿、黄、红…）。",
+    "saved": "已保存",
+    "saveFailed": "保存失败：{{error}}",
+    "retry": "重试"
   },
   "update": {
     "check": "检查更新",

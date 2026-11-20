@@ -66,11 +66,7 @@ export default function App() {
         <Settings
           state={state}
           focusToken={focusToken}
-          onSaved={(next) => {
-            setState(next);
-            setFocusToken(false);
-            setView("panel");
-          }}
+          onSaved={(next) => setState(next)}
           onBack={() => {
             setFocusToken(false);
             setView("panel");
