@@ -11,6 +11,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager,
 };
+#[cfg(not(target_os = "macos"))]
 use tauri_plugin_positioner::{Position, WindowExt};
 
 /// The dot is drawn on a 36 px canvas that AppKit scales to an 18 pt status
@@ -104,7 +105,31 @@ pub fn refresh_menu(app: &AppHandle, cfg: &Config) {
 }
 
 pub fn show(app: &AppHandle) {
-    if let Some(win) = app.get_webview_window("main") {
+    let Some(win) = app.get_webview_window("main") else {
+        return;
+    };
+
+    #[cfg(target_os = "macos")]
+    {
+        // AppKit objects are main-thread only. A tray click already runs here,
+        // so place and reveal inline instead of queueing a turn.
+        if objc2::MainThreadMarker::new().is_some() {
+            macos_panel::place(app, &win);
+            let _ = win.show();
+            let _ = win.set_focus();
+        } else {
+            let handle = app.clone();
+            let window = win.clone();
+            let _ = app.run_on_main_thread(move || {
+                macos_panel::place(&handle, &window);
+                let _ = window.show();
+                let _ = window.set_focus();
+            });
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
         let _ = win.move_window(Position::TrayCenter);
         let _ = win.show();
         let _ = win.set_focus();
@@ -346,10 +371,199 @@ pub fn clear(app: &AppHandle, display: &TrayDisplay, _lang: &str) {
     }
 }
 
+/// Put the panel under the status item, in AppKit's own point space.
+///
+/// The positioner plugin works in a mixed space: it scales the status item's
+/// frame by the menu bar display's backing scale factor and hands a "physical"
+/// position to `set_position`, which tao divides back by the scale factor of
+/// whichever display the panel currently sits on. With two displays at
+/// different scales that round trip does not cancel, so the panel lands at a
+/// scaled version of the right place -- often on the other monitor. Reading and
+/// writing points directly has no such problem, and it also skips the plugin's
+/// cached rect, which only refreshes on mouse events over the icon.
+#[cfg(target_os = "macos")]
+mod macos_panel {
+    use super::TRAY_ID;
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::{NSScreen, NSWindow};
+    use objc2_foundation::{NSPoint, NSRect};
+    use tauri::{AppHandle, WebviewWindow};
+
+    /// The status item's frame in global AppKit points (y up from the bottom of
+    /// the primary display), read live from the button's own window.
+    fn status_item_frame(app: &AppHandle) -> Option<NSRect> {
+        let tray = app.tray_by_id(TRAY_ID)?;
+        tray.with_inner_tray_icon(|inner| {
+            // The marker cannot be captured by this `Send` closure, and the
+            // status item is only readable on the main thread anyway.
+            let mtm = MainThreadMarker::new()?;
+            let item = inner.ns_status_item()?;
+            let button = item.button(mtm)?;
+            let window = button.window()?;
+            Some(window.frame())
+        })
+        .ok()
+        .flatten()
+    }
+
+    fn contains(rect: NSRect, point: NSPoint) -> bool {
+        point.x >= rect.origin.x
+            && point.x <= rect.origin.x + rect.size.width
+            && point.y >= rect.origin.y
+            && point.y <= rect.origin.y + rect.size.height
+    }
+
+    /// Returns false when the panel could not be placed, so the caller leaves
+    /// the window where it is rather than guessing.
+    pub fn place(app: &AppHandle, win: &WebviewWindow) -> bool {
+        let Some(mtm) = MainThreadMarker::new() else {
+            return false;
+        };
+        let Some(anchor) = status_item_frame(app) else {
+            return false;
+        };
+        let Ok(ptr) = win.ns_window() else {
+            return false;
+        };
+        if ptr.is_null() {
+            return false;
+        }
+        let panel = unsafe { &*ptr.cast::<NSWindow>() };
+        let size = panel.frame().size;
+        let centre = NSPoint::new(
+            anchor.origin.x + anchor.size.width / 2.0,
+            anchor.origin.y + anchor.size.height / 2.0,
+        );
+
+        // The panel may still be sitting on another display, so go by where
+        // the icon is rather than where the window currently is.
+        let screen = NSScreen::screens(mtm)
+            .iter()
+            .find(|s| contains(s.frame(), centre))
+            .or_else(|| panel.screen());
+        let visible = screen
+            .as_ref()
+            .map(|s| rect(s.visibleFrame()))
+            .unwrap_or(NO_BOUNDS);
+
+        let [left, top] = top_left(
+            [
+                anchor.origin.x,
+                anchor.origin.y,
+                anchor.size.width,
+                anchor.size.height,
+            ],
+            [size.width, size.height],
+            visible,
+        );
+
+        #[cfg(debug_assertions)]
+        eprintln!(
+            "panel: icon=({:.0},{:.0} {:.0}x{:.0}) panel={:.0}x{:.0} -> top-left=({:.0},{:.0}) screen={:?}",
+            anchor.origin.x,
+            anchor.origin.y,
+            anchor.size.width,
+            anchor.size.height,
+            size.width,
+            size.height,
+            left,
+            top,
+            screen.as_ref().map(|s| s.frame().origin.x),
+        );
+
+        panel.setFrameTopLeftPoint(NSPoint::new(left, top));
+        true
+    }
+
+    fn rect(r: NSRect) -> [f64; 4] {
+        [r.origin.x, r.origin.y, r.size.width, r.size.height]
+    }
+
+    /// Stand-in bounds when the icon's display cannot be identified: clamp
+    /// against nothing rather than dragging the panel to an edge.
+    const NO_BOUNDS: [f64; 4] = [-1.0e9, -1.0e9, 2.0e9, 2.0e9];
+
+    /// The panel's top-left corner in AppKit points: centred under the icon,
+    /// hanging from its bottom edge, and kept inside `visible` -- the visible
+    /// frame of the display the icon is on.
+    ///
+    /// Inputs and output are `[x, y, width, height]` in AppKit points, except
+    /// `panel`, which is `[width, height]`.
+    fn top_left(icon: [f64; 4], panel: [f64; 2], visible: [f64; 4]) -> [f64; 2] {
+        let centre_x = icon[0] + icon[2] / 2.0;
+        let left_min = visible[0];
+        let left_max = (visible[0] + visible[2] - panel[0]).max(left_min);
+        let top_max = visible[1] + visible[3];
+        // A panel taller than the display keeps its top edge on screen.
+        let top_min = (visible[1] + panel[1]).min(top_max);
+
+        let left = (centre_x - panel[0] / 2.0).clamp(left_min, left_max);
+        let top = icon[1].clamp(top_min, top_max);
+        [left, top]
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        /// A 1920x1080 primary with a 24 pt menu bar: the status item reaches
+        /// from y=1050 to y=1074, the visible area stops at y=1050.
+        fn primary() -> [f64; 4] {
+            [0.0, 0.0, 1920.0, 1050.0]
+        }
+
+        const PANEL: [f64; 2] = [340.0, 520.0];
+
+        #[test]
+        fn the_panel_hangs_centred_under_the_icon() {
+            let [left, top] = top_left([1148.0, 1050.0, 48.0, 30.0], PANEL, primary());
+            assert_eq!(left, 1172.0 - 170.0);
+            // Its top edge sits on the icon's bottom edge, not the screen's.
+            assert_eq!(top, 1050.0);
+        }
+
+        #[test]
+        fn an_icon_near_the_right_edge_keeps_the_panel_on_the_display() {
+            // A display narrower than the panel plus the icon's offset.
+            let visible = [0.0, 0.0, 1440.0, 875.0];
+            let [left, _] = top_left([1400.0, 875.0, 48.0, 30.0], PANEL, visible);
+            assert_eq!(left, 1440.0 - 340.0);
+        }
+
+        #[test]
+        fn an_icon_on_a_display_to_the_left_keeps_its_own_origins() {
+            // Second display 1920 pt wide, placed left of the primary: its
+            // AppKit coordinates start at -1920, and so does the clamp.
+            let visible = [-1920.0, 0.0, 1920.0, 1050.0];
+            let [left, top] = top_left([-1000.0, 1050.0, 48.0, 30.0], PANEL, visible);
+            assert_eq!(left, -976.0 - 170.0);
+            assert_eq!(top, 1050.0);
+            assert!(left >= -1920.0, "panel ran off the left display");
+        }
+
+        #[test]
+        fn an_icon_on_a_display_above_the_primary_opens_up_there() {
+            // A display stacked above the primary occupies y 1080..2160.
+            let visible = [0.0, 1080.0, 2560.0, 1410.0];
+            let [_, top] = top_left([600.0, 2130.0, 48.0, 30.0], PANEL, visible);
+            assert_eq!(top, 2130.0);
+            assert!(top > 1080.0, "panel dropped to the primary display");
+        }
+
+        #[test]
+        fn a_panel_taller_than_the_display_is_pinned_to_its_top() {
+            let visible = [0.0, 0.0, 1920.0, 300.0];
+            let [_, top] = top_left([900.0, 300.0, 48.0, 30.0], [340.0, 520.0], visible);
+            assert_eq!(top, 300.0);
+        }
+    }
+}
+
 /// Repaint the status item's title. `set_title` installs a plain string; on
 /// macOS the only way to give the *text* a colour is an attributed title, so
 /// the same string is rebuilt with the level colour (or the system label
 /// colour when the option is off). Windows has no menu bar text at all.
+
 #[cfg(target_os = "macos")]
 fn paint_title(tray: &tauri::tray::TrayIcon, title: &str, aqi: Option<i32>, colored: bool) {
     let title = title.to_string();

@@ -39,12 +39,21 @@ objc2-app-kit = { version = "0.3", features = [
   "NSControl",
   "NSColor",
   "NSFont",
-  "NSAttributedString",
+  "NSScreen",
   "NSStatusItem",
+  "NSStatusBarButton",
+  "NSView",
+  "NSWindow",
+  "NSAttributedString",
   "NSAppearance",
   "objc2-core-foundation",
 ] }
-objc2-foundation = { version = "0.3", features = ["NSString", "NSArray", "NSRange"] }
+objc2-foundation = { version = "0.3", features = [
+  "NSString",
+  "NSArray",
+  "NSRange",
+  "NSGeometry",
+] }
 
 [profile.release]
 codegen-units = 1
