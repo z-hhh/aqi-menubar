@@ -139,12 +139,20 @@ pub fn run() {
             tray::clear(app.handle(), &cfg.tray, &cfg.resolved_language());
 
             // First run: open the panel so the token step is obvious.
-            // AQI_MENUBAR_SHOW is a developer hook for screenshots and e2e checks.
-            if cfg.token.trim().is_empty() || std::env::var("AQI_MENUBAR_SHOW").is_ok() {
+            // AQI_MENUBAR_SHOW / AQI_MENUBAR_DEV_VIEW are developer hooks for
+            // screenshots and e2e checks ("settings" opens straight on Settings).
+            let dev_view = std::env::var("AQI_MENUBAR_DEV_VIEW").ok();
+            if cfg.token.trim().is_empty()
+                || std::env::var("AQI_MENUBAR_SHOW").is_ok()
+                || dev_view.is_some()
+            {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                     tray::show(&handle);
+                    if dev_view.as_deref() == Some("settings") {
+                        let _ = handle.emit(tray::EVENT_OPEN_SETTINGS, ());
+                    }
                 });
             }
 

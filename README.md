@@ -1,8 +1,26 @@
-# AQI Menubar
+<h1 align="center">AQI Menubar</h1>
 
-Air quality in your **macOS menu bar** or **Windows system tray** — one number, one click
-away from the station details. Data comes straight from [aqicn.org](https://aqicn.org) with
-your own free API token: no account, no backend of ours, no telemetry.
+<p align="center">
+  <a href="README.zh-CN.md">简体中文</a> · <b>English</b>
+</p>
+
+<p align="center">
+  Air quality in your <b>macOS menu bar</b> or <b>Windows system tray</b> — one number, one click away
+  from the station details. Data comes straight from <a href="https://aqicn.org">aqicn.org</a> with your
+  own free API token: no account, no backend of ours, no telemetry.
+</p>
+
+<p align="center">
+  <a href="https://github.com/z-hhh/aqi-menubar/releases/latest"><img src="https://img.shields.io/github/v/release/z-hhh/aqi-menubar?label=release" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/platforms-macOS%2011%2B%20%7C%20Windows%2010%2F11-blue" alt="Platforms">
+  <img src="https://img.shields.io/badge/licence-MIT-green" alt="MIT licence">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/panel-en.png" width="300" alt="The panel: 82 AQI, moderate, Shanghai station, pollutant grid and data sources">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/settings-en.png" width="300" alt="Settings: token, location, menu bar options with a live preview, refresh interval, language, updates">
+</p>
 
 | | |
 |---|---|
@@ -10,8 +28,6 @@ your own free API token: no account, no backend of ours, no telemetry.
 | Stack | Tauri 2 · Rust · React + TypeScript · i18next |
 | Languages | English · 简体中文 · 日本語 (auto-detected, switchable in Settings) |
 | Licence | MIT |
-
-<img src="assets/app-icon.png" width="96" alt="App icon">
 
 ## Install
 
@@ -28,6 +44,15 @@ installations hit the same Gatekeeper gate, so it is not worth a tap yet.
 
 The landing page lives in [`landing/`](landing) and is published to GitHub Pages by
 `.github/workflows/pages.yml` — enable **Settings → Pages → Source: GitHub Actions** once.
+
+## Screenshots
+
+Shot from the running app at 2× — no mock-ups. The reading is live aqicn data for Shanghai.
+
+| | |
+|---|---|
+| <img src="docs/screenshots/onboarding-en.png" width="250" alt="First run: a three-step token guide with Get a free token and I already have a token"> | <img src="docs/screenshots/panel-zh.png" width="250" alt="The panel in Chinese: AQI 82, 良, station details, pollutants and sources"> |
+| **First run.** Three steps to a free token; “I already have a token” jumps straight to the field. | **The panel in 中文.** Same layout, localized level words and units. |
 
 ## What it does
 
@@ -94,7 +119,7 @@ The panel's frontend also runs in a plain browser against mock data, which is ho
 reviewed without launching the desktop app:
 
 ```bash
-pnpm dev   # http://localhost:1420/?mock=empty | ?mock=data&aqi=178 | ?update=0.2.0
+pnpm dev   # http://localhost:1420/?mock=empty | ?mock=data&aqi=178 | ?update=0.2.0&lang=zh-CN
 ```
 
 Checks:
@@ -103,6 +128,11 @@ Checks:
 pnpm build                      # type-check + frontend bundle
 cd src-tauri && cargo test      # API parsing, URL building, colour bands, tray text
 ```
+
+Two developer environment variables help with scripted checks and the screenshots in
+[`docs/screenshots`](docs/screenshots): `AQI_MENUBAR_SHOW=1` opens the panel on launch, and
+`AQI_MENUBAR_DEV_VIEW=settings` opens Settings directly. With a token in the config, the window
+captures at 2× on a Retina display — that is how these images were taken.
 
 ### Layout
 
@@ -116,6 +146,7 @@ src-tauri/src/
   icons.rs            EPA colour bands and the generated tray dot
   commands.rs         IPC surface: state, config, search, tray preview, updater
   lib.rs              App setup, the polling loop, the update check
+docs/screenshots/     README screenshots (2× PNG, also used by the landing page)
 landing/              Static landing page (GitHub Pages)
 packaging/homebrew/   Cask, tap bump script, official-cask checklist
 ```
@@ -154,5 +185,5 @@ download once by hand — keep it somewhere safe.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). "aqicn", "World Air Quality Index" and the data belong to their
+MIT — see [LICENSE](LICENSE). “aqicn”, “World Air Quality Index” and the data belong to their
 respective owners.

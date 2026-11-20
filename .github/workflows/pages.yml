@@ -3,7 +3,7 @@ name: pages
 on:
   push:
     branches: [main]
-    paths: ["landing/**", ".github/workflows/pages.yml"]
+    paths: ["landing/**", "docs/screenshots/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,9 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The README screenshots are the single source of truth for the app UI;
+      # the landing page shows the same files under shots/.
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp -R landing/. _site/
+          mkdir -p _site/shots
+          cp docs/screenshots/*.png _site/shots/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: landing
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
