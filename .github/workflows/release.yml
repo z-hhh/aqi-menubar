@@ -58,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write   # the last step re-runs pages.yml to refresh the dl/ mirror
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,9 +80,18 @@ jobs:
           - **macOS** (Apple silicon + Intel): \`AQI.Menubar_${version}_universal.dmg\`
           - **Windows**: \`AQI.Menubar_${version}_x64-setup.exe\` or \`AQI.Menubar_${version}_x64_en-US.msi\`
 
-          The macOS build is ad-hoc signed, not notarised, so the first launch asks for
-          confirmation: right-click the app → **Open**, or allow it under
-          **System Settings → Privacy & Security**.
+          The macOS build is ad-hoc signed, not notarised, so macOS blocks the first
+          launch. Drag the app into **Applications** first, then double-click it once —
+          that attempt is what makes the next step possible — and go to
+          **System Settings → Privacy & Security → Security**, press the button next to
+          the notice about AQI Menubar (usually "Open Anyway"), confirm, and enter your
+          login password. That button only exists for about an hour after the attempt.
+          A dialog calling the app "damaged" means the download was incomplete: download
+          the .dmg again, and do not run the steps above.
+
+          Windows: the installer is unsigned, so SmartScreen may show "Windows protected
+          your PC" — click **More info → Run anyway**. If you do not see it, nothing
+          blocked you: just install.
 
           Installs of an older version update themselves in place from the signed feed —
           no download needed.
@@ -91,8 +101,14 @@ jobs:
           - **macOS**（Apple 芯片与 Intel 通用）：\`AQI.Menubar_${version}_universal.dmg\`
           - **Windows**：\`AQI.Menubar_${version}_x64-setup.exe\` 或 \`AQI.Menubar_${version}_x64_en-US.msi\`
 
-          macOS 版是临时签名、未经公证，首次打开需要确认：右键应用 → **打开**，或在
-          **系统设置 → 隐私与安全性** 里允许。
+          macOS 版是临时签名、未经公证，首次打开会被拦下。先把应用拖进**应用程序**，
+          再在那里双击一次（这一步才会让下一个按钮出现），然后打开
+          **系统设置 → 隐私与安全性 → 安全性**，点提示旁边那个按钮（通常是「仍要打开」），
+          确认并输入开机密码。这个按钮只在尝试打开后一小时内有效。
+          如果提示「已损坏，无法打开」，说明下载不完整，重新下一遍 .dmg，不要走上面的放行步骤。
+
+          Windows：安装包未签名，SmartScreen 可能会提示「Windows 已保护你的电脑」，
+          点**更多信息 → 仍要运行**；没看到提示说明系统没拦，直接安装即可。
 
           旧版本会自动原地更新，无需重新下载。
 
@@ -111,3 +127,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
         run: gh release edit "${TAG}" --draft=false --latest --notes-file notes.md
+      # The page keeps a copy of the installers under /dl/; without this it would
+      # keep serving the previous version's files until someone pushes landing/**.
+      - name: Refresh the download mirror on the page
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run pages.yml --repo "${GITHUB_REPOSITORY}"

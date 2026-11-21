@@ -31,6 +31,30 @@ jobs:
           cp -R landing/. _site/
           mkdir -p _site/shots
           cp docs/screenshots/*.png _site/shots/
+      # Insurance for the domestic download path. aqi.zhhh.fun is GitHub Pages
+      # (Fastly, 185.199.108-111.153) while the installers themselves are served
+      # from release-assets.githubusercontent.com — a different network that can be
+      # blocked or slow from mainland China even when the page loads fine. A copy
+      # here means one reachable domain is enough to get the app.
+      # Best effort on purpose: a failure must never stop the page from deploying,
+      # and the site without dl/ is still correct.
+      - name: Mirror the installers beside the page
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          mkdir -p _site/dl
+          tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)" || exit 0
+          printf '%s\n' "${tag}" > _site/dl/version.txt
+          gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.assets[].name' \
+            | grep -E '\.(dmg|exe)$' \
+            | while read -r f; do
+                curl -fsSL --retry 3 -o "_site/dl/${f}" \
+                  "https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${f}" \
+                  || rm -f "_site/dl/${f}"
+              done
+          ls -l _site/dl
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
