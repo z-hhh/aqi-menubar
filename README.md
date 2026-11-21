@@ -40,8 +40,9 @@ The macOS build is ad-hoc signed, not notarised, so the first launch is blocked 
 dialog only offers **Done** and **Move to Trash** — there is no Open button in it, and that is the
 block, not a broken download. To get past it:
 
-1. Double-click the app once (drag it into Applications first if it is still on the disk image).
-   macOS blocks it — that first attempt is what makes the next step possible.
+1. Drag the app into Applications first — double-clicking it straight from the disk image runs it
+   from a temporary location. Then double-click it in Applications once: macOS blocks it, and that
+   first attempt is what makes the next step possible.
 2. Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open**, then
    **Open Anyway**, and enter your login password. The button only appears for an hour after the
    blocked attempt. (Wording of these buttons varies slightly between macOS versions.)
