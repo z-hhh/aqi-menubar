@@ -88,8 +88,10 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
   specific station picked from search.
 - **Refresh interval**: 5–60 minutes. aqicn stations publish hourly, so anything faster only
   burns your quota.
-- **Updates**: checked 20 seconds after launch and then every six hours, installed in place
-  from the signed release feed, with a **Check for updates…** item in the tray menu.
+- **Updates**: checked 20 seconds after launch and then every six hours from the signed release
+  feed, with a **Check for updates…** item in the tray menu. The updater is built in, but an
+  in-place cross-version update has not been verified end to end yet — install new versions from
+  the releases page for now.
 - Data stays on your machine. If a refresh fails, the panel keeps showing the last reading and
   marks it as stale instead of going blank.
 
