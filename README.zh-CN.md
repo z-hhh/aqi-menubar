@@ -1,11 +1,11 @@
-<h1 align="center">AQI Menubar</h1>
+<h1 align="center">抬眼空气 · AQI Menubar</h1>
 
 <p align="center">
   <b>简体中文</b> · <a href="README.md">English</a>
 </p>
 
 <p align="center">
-  把空气质量放进 <b>macOS 菜单栏</b> 或 <b>Windows 通知区</b>——一个数字，点一下就展开站点详情。
+  <b>抬眼空气</b>（AQI Menubar）把空气质量放进 <b>macOS 菜单栏</b> 或 <b>Windows 通知区</b>——一个数字，点一下就展开站点详情。
   数据用你自己的免费 token 从 <a href="https://aqicn.org">aqicn.org</a> 直连获取：没有账号、没有我们自己的
   后端、没有埋点。
 </p>

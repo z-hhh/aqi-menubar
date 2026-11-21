@@ -45,16 +45,46 @@ jobs:
         run: |
           set -u
           mkdir -p _site/dl
-          tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq .tag_name)" || exit 0
+          api="repos/${GITHUB_REPOSITORY}/releases/latest"
+          tag="$(gh api "${api}" --jq .tag_name)" || exit 0
+          [ -n "${tag}" ] || exit 0
+          version="${tag#v}"
           printf '%s\n' "${tag}" > _site/dl/version.txt
-          gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.assets[].name' \
+
+          # Only the two files the landing page offers. A failed download is
+          # removed rather than shipped half-written.
+          gh api "${api}" --jq '.assets[].name' \
             | grep -E '\.(dmg|exe)$' \
             | while read -r f; do
                 curl -fsSL --retry 3 -o "_site/dl/${f}" \
                   "https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/${f}" \
                   || rm -f "_site/dl/${f}"
               done
+
+          # The landing page reads latest.json and shows its mirror link only
+          # when this version matches the release the buttons point at, and only
+          # when the hash it publishes matches the file it serves. If either
+          # installer is missing, no manifest is written at all: the page then
+          # has no mirror link, which is the correct failure.
+          entry() {
+            [ -n "$1" ] && [ -f "_site/dl/$1" ] || return 0
+            printf '{"name":"%s","size":%s,"sha256":"%s"}' \
+              "$1" \
+              "$(wc -c < "_site/dl/$1" | tr -d ' ')" \
+              "$(sha256sum "_site/dl/$1" | cut -d' ' -f1)"
+          }
+
+          dmg="$(gh api "${api}" --jq '[.assets[].name | select(endswith(".dmg"))][0] // empty')"
+          exe="$(gh api "${api}" --jq '[.assets[].name | select(endswith("-setup.exe"))][0] // empty')"
+          dmg_json="$(entry "${dmg}")"
+          exe_json="$(entry "${exe}")"
+          if [ -n "${dmg_json}" ] && [ -n "${exe_json}" ]; then
+            printf '{"version":"%s","tag":"%s","dmg":%s,"exe":%s}\n' \
+              "${version}" "${tag}" "${dmg_json}" "${exe_json}" > _site/dl/latest.json
+          fi
+
           ls -l _site/dl
+          cat _site/dl/latest.json 2>/dev/null || echo "no latest.json (a file is missing)"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

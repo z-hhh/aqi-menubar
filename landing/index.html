@@ -3,14 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AQI Menubar — air quality in your menu bar</title>
+    <title>抬眼空气 · AQI Menubar — air quality in your menu bar</title>
     <meta
       name="description"
-      content="A free, open-source air quality indicator for the macOS menu bar and the Windows system tray. Live AQI from aqicn.org, in English, 中文 and 日本語."
+      content="抬眼空气 · AQI Menubar — a free, open-source air quality indicator for the macOS menu bar and the Windows system tray. Live AQI from aqicn.org, in English, 中文 and 日本語."
     />
     <link rel="icon" href="icon.png" />
-    <meta property="og:title" content="AQI Menubar" />
-    <meta property="og:description" content="Air quality in your menu bar. Free, open source, macOS + Windows." />
+    <meta property="og:title" content="抬眼空气 · AQI Menubar" />
+    <meta property="og:site_name" content="抬眼空气" />
+    <meta property="og:description" content="抬眼空气 · Air quality in your menu bar. Free, open source, macOS + Windows." />
     <meta property="og:image" content="shots/panel-en.png" />
     <style>
       :root {
@@ -112,6 +113,13 @@
       .btn.secondary { border-color: var(--line); color: var(--fg); background: transparent; }
       .btn small { font-weight: 500; opacity: 0.75; }
       .fineprint { color: var(--muted); font-size: 12.5px; margin-top: 14px; }
+      .mirror-note {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        margin-top: 8px;
+        word-break: break-all;
+        max-width: 34em;
+      }
 
       .shot { position: relative; }
       .shot img {
@@ -212,7 +220,11 @@
               <a class="btn secondary" id="dl-win" data-release href="https://github.com/z-hhh/aqi-menubar/releases/latest">
                 <span data-i18n="dlWin">Download for Windows</span>
               </a>
+              <!-- Shown at run time only when /dl/latest.json names the same
+                   version as the newest release and its hash matches it. -->
+              <a class="btn secondary" id="dl-mirror" href="/dl/" hidden>China mirror</a>
             </div>
+            <p class="mirror-note" id="mirror-note" hidden></p>
             <p class="fineprint" data-i18n="fineprint">
               macOS 11+ (Apple Silicon and Intel) · Windows 10/11 · MIT licence
             </p>
@@ -401,6 +413,8 @@
           lede: "A live AQI in your macOS menu bar or Windows system tray. Free, open source, and it talks straight to aqicn.org with your own token — no account, no server of ours.",
           dlMac: "Download for macOS",
           dlWin: "Download for Windows",
+          dlMirror: "China mirror v{version} (faster)",
+          dlMirrorNote: "Mirror copy of the same file · SHA-256 {sha}",
           copy: "Copy",
           copied: "Copied",
           fineprint: "macOS 11+ (Apple Silicon and Intel) · Windows 10/11 · MIT licence",
@@ -443,10 +457,12 @@
           s3: "Paste it in Settings and pick your city."
         },
         "zh-CN": {
-          h1: "空气质量，抬眼就看到。",
+          h1: "抬眼空气 —— 空气质量，抬眼就看到。",
           lede: "Mac 菜单栏、Windows 托盘的实时 AQI。免费开源，用你自己的 token 直连 aqicn.org——不需要账号，也没有我们的服务器。",
           dlMac: "下载 macOS 版",
           dlWin: "下载 Windows 版",
+          dlMirror: "国内镜像 v{version}（更快）",
+          dlMirrorNote: "同一文件的国内副本 · SHA-256 {sha}",
           copy: "复制",
           copied: "已复制",
           fineprint: "macOS 11 以上（Apple 芯片与 Intel）· Windows 10/11 · MIT 许可",
@@ -493,6 +509,8 @@
           lede: "macOS のメニューバー、Windows のタスクトレイにリアルタイムの AQI を。無料・オープンソースで、自分のトークンで aqicn.org に直接アクセスします。アカウントも当方のサーバーも不要です。",
           dlMac: "macOS 版をダウンロード",
           dlWin: "Windows 版をダウンロード",
+          dlMirror: "中国ミラー v{version}（高速）",
+          dlMirrorNote: "同じファイルの中国向けコピー · SHA-256 {sha}",
           copy: "コピー",
           copied: "コピーしました",
           fineprint: "macOS 11 以降（Apple Silicon / Intel）· Windows 10/11 · MIT ライセンス",
@@ -536,6 +554,16 @@
         }
       };
 
+      // The copy under /dl/ is not the release feed: it is only as new as the
+      // last pages run. So the secondary link appears only when the manifest
+      // this site serves names the same version as the newest release, and only
+      // when the hash it publishes is the hash of that release's own asset.
+      // Anything else — a stale copy, a half-finished upload, the GitHub API
+      // unreachable or rate-limited — leaves the link hidden on purpose.
+      const MIRROR_MANIFEST = "/dl/latest.json";
+      const LATEST_RELEASE = "https://api.github.com/repos/z-hhh/aqi-menubar/releases/latest";
+      let mirror = null;
+
       const saved = localStorage.getItem("aqi-landing-lang");
       const nav = (navigator.language || "en").toLowerCase();
       const initial = saved || (nav.startsWith("zh") ? "zh-CN" : nav.startsWith("ja") ? "ja" : "en");
@@ -552,12 +580,13 @@
         });
         document.title =
           lang === "zh-CN"
-            ? "AQI Menubar — 菜单栏里的空气质量"
+            ? "抬眼空气 — 菜单栏里的空气质量"
             : lang === "ja"
-              ? "AQI Menubar — メニューバーの大気質"
-              : "AQI Menubar — air quality in your menu bar";
+              ? "抬眼空气 · AQI Menubar — メニューバーの大気質"
+              : "抬眼空气 · AQI Menubar — air quality in your menu bar";
         localStorage.setItem("aqi-landing-lang", lang);
         window.__lang = lang;
+        renderMirror();
       }
 
       document.querySelectorAll("[data-lang]").forEach((btn) => {
@@ -568,6 +597,54 @@
       document.querySelectorAll("[data-release]").forEach((a) => {
         a.href = RELEASES_URL;
       });
+
+      function renderMirror() {
+        const link = document.getElementById("dl-mirror");
+        const note = document.getElementById("mirror-note");
+        if (!link || !note) return;
+        link.hidden = !mirror;
+        note.hidden = !mirror;
+        if (!mirror) return;
+        const dict = STRINGS[window.__lang] || STRINGS.en;
+        link.textContent = dict.dlMirror.replace("{version}", mirror.version);
+        note.textContent = dict.dlMirrorNote.replace("{sha}", mirror.sha256);
+      }
+
+      async function checkMirror() {
+        try {
+          const [manifest, release] = await Promise.all([
+            fetch(MIRROR_MANIFEST, { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)),
+            // Left cacheable: GitHub sends max-age=60, and every extra request
+            // costs one of the 60 anonymous requests an IP gets per hour.
+            fetch(LATEST_RELEASE, {
+              headers: { Accept: "application/vnd.github+json" },
+            }).then((r) => (r.ok ? r.json() : null)),
+          ]);
+          if (!manifest || !release) return;
+          const tag = String(release.tag_name || "").replace(/^v/, "");
+          if (!tag || tag !== String(manifest.version || "").replace(/^v/, "")) return;
+          const win =
+            (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase().indexOf("win") !== -1;
+          const file = win ? manifest.exe : manifest.dmg;
+          if (!file || !file.name || !file.sha256) return;
+          const asset = (release.assets || []).find((a) => a.name === file.name);
+          if (!asset) return;
+          // GitHub publishes each asset's digest; when it is there, the file we
+          // offer a link to must be byte-identical to the one in the release.
+          if (asset.digest && asset.digest.toLowerCase() !== "sha256:" + file.sha256.toLowerCase()) return;
+          mirror = {
+            version: String(manifest.version).replace(/^v/, ""),
+            sha256: file.sha256,
+            href: "/dl/" + file.name,
+          };
+          document.getElementById("dl-mirror").href = mirror.href;
+          renderMirror();
+        } catch (err) {
+          // Leave it hidden: no mirror link is better than the wrong file.
+        }
+      }
+
+      void checkMirror();
 
       // Highlight the download button that matches this machine.
       const platform = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
