@@ -36,8 +36,21 @@ Take the `.dmg` (macOS) or the installer (Windows) from
 [Releases](https://github.com/z-hhh/aqi-menubar/releases/latest). Both builds update themselves in
 place from the signed release feed.
 
-The macOS build is ad-hoc signed, not notarised, so the first launch asks for confirmation:
-right-click the app → **Open**, or allow it under **System Settings → Privacy & Security**.
+The macOS build is ad-hoc signed, not notarised, so the first launch is blocked by Gatekeeper. The
+dialog only offers **Done** and **Move to Trash** — there is no Open button in it, and that is the
+block, not a broken download. To get past it:
+
+1. Double-click the app once (drag it into Applications first if it is still on the disk image).
+   macOS blocks it — that first attempt is what makes the next step possible.
+2. Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open**, then
+   **Open Anyway**, and enter your login password. The button only appears for an hour after the
+   blocked attempt. (Wording of these buttons varies slightly between macOS versions.)
+3. On macOS 14 and earlier, Control-click the app → **Open** → **Open** also works. macOS 15 and
+   later removed that menu item.
+4. A dialog calling the app "damaged" means the download was incomplete — download the `.dmg` again.
+
+The Windows installer is unsigned, so SmartScreen may show **Windows protected your PC** →
+**More info** → **Run anyway**.
 
 A cask definition is kept in [`packaging/homebrew`](packaging/homebrew) for anyone who wants to
 run a tap of their own. It is not published: without an Apple Developer ID (notarisation) Homebrew
