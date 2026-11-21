@@ -161,6 +161,22 @@
       .steps { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; }
       .steps li { margin-bottom: 6px; }
 
+      .gate {
+        margin-top: 22px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: var(--card);
+        padding: 20px;
+      }
+      .gate h3 { margin: 0 0 8px; font-size: 16px; letter-spacing: -0.01em; }
+      .gate .gate-lede { color: var(--muted); font-size: 14px; margin: 0 0 18px; max-width: 46em; }
+      .gate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px 32px; }
+      @media (max-width: 820px) { .gate-grid { grid-template-columns: 1fr; gap: 18px; } }
+      .gate h4 { margin: 0 0 6px; font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em; }
+      .gate p { margin: 0 0 8px; font-size: 13.5px; color: var(--muted); }
+      .gate .steps { font-size: 13.5px; }
+      .gate .steps li:last-child { margin-bottom: 0; }
+
       footer { border-top: 1px solid var(--line); padding: 28px 0 48px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
       footer a { color: var(--muted); text-decoration: none; }
       footer a:hover { color: var(--fg); text-decoration: underline; }
@@ -190,10 +206,10 @@
               talks straight to aqicn.org with your own token — no account, no server of ours.
             </p>
             <div class="cta">
-              <a class="btn primary" id="dl-mac" href="https://github.com/z-hhh/aqi-menubar/releases/latest">
+              <a class="btn primary" id="dl-mac" data-release href="https://github.com/z-hhh/aqi-menubar/releases/latest">
                 <span data-i18n="dlMac">Download for macOS</span>
               </a>
-              <a class="btn secondary" id="dl-win" href="https://github.com/z-hhh/aqi-menubar/releases/latest">
+              <a class="btn secondary" id="dl-win" data-release href="https://github.com/z-hhh/aqi-menubar/releases/latest">
                 <span data-i18n="dlWin">Download for Windows</span>
               </a>
             </div>
@@ -272,12 +288,62 @@
             <div class="card">
               <h3>macOS</h3>
               <p class="meta" data-i18n="macMeta">Universal .dmg for macOS 11 and later</p>
-              <a class="btn secondary" href="https://github.com/z-hhh/aqi-menubar/releases/latest" data-i18n="openReleases">Open the releases page</a>
+              <a class="btn secondary" data-release href="https://github.com/z-hhh/aqi-menubar/releases/latest" data-i18n="openReleases">Open the releases page</a>
             </div>
             <div class="card">
               <h3>Windows</h3>
               <p class="meta" data-i18n="winMeta">Installer for Windows 10 and 11</p>
-              <a class="btn secondary" href="https://github.com/z-hhh/aqi-menubar/releases/latest" data-i18n="openReleases2">Open the releases page</a>
+              <a class="btn secondary" data-release href="https://github.com/z-hhh/aqi-menubar/releases/latest" data-i18n="openReleases2">Open the releases page</a>
+            </div>
+          </div>
+          <!-- Download links: the hrefs above are a no-JS fallback only. The single
+               place to change is RELEASES_URL in the script at the bottom. -->
+          <div class="gate">
+            <h3 data-i18n="gateTitle">First launch is blocked — here is how to open it</h3>
+            <p class="gate-lede" data-i18n="gateLede">
+              It is not a virus. Neither build has a paid signing certificate — the macOS app is
+              ad-hoc signed and not notarised by Apple — so the system warns you once. The download
+              itself is fine.
+            </p>
+            <div class="gate-grid">
+              <div>
+                <h4 data-i18n="gateMacTitle">macOS</h4>
+                <p data-i18n="gateMacDialog">
+                  First drag the app into Applications — double-clicking it straight from the
+                  downloaded disk image runs it from a temporary location, which causes trouble later.
+                  Once it is in Applications, double-clicking shows a dialog saying Apple could not
+                  verify “AQI Menubar” is free of malware. Nothing in it opens the app — that is the
+                  block, not a broken app. If the dialog instead says “AQI Menubar” is damaged and
+                  can’t be opened, the download did not finish: download the installer again, and the
+                  steps below are not needed.
+                </p>
+                <ol class="steps">
+                  <li data-i18n="gateMacA">
+                    Open the app once in Finder — it gets blocked, that is expected. Then go to
+                    System Settings → Privacy &amp; Security → Security and press the button next to
+                    the notice about the app (usually Open / Open Anyway), confirm, and enter your
+                    login password. That button only appears for an hour after the blocked attempt,
+                    which is why the double-click comes first.
+                  </li>
+                  <li data-i18n="gateMacB">
+                    On macOS 14 and earlier there is also a shortcut: Control-click the app icon →
+                    Open → Open. macOS 15 and later no longer offer it.
+                  </li>
+                </ol>
+              </div>
+              <div>
+                <h4 data-i18n="gateWinTitle">Windows</h4>
+                <p data-i18n="gateWinDialog">
+                  Running the installer may show a blue “Windows protected your PC”. If you don't
+                  see it, nothing blocked you — just go ahead and install.
+                </p>
+                <ol class="steps">
+                  <li data-i18n="gateWinA">
+                    Click “More info” → “Run anyway”. If the same dialog shows up the first time you
+                    start the app, handle it the same way.
+                  </li>
+                </ol>
+              </div>
             </div>
           </div>
           <p class="fineprint" data-i18n="afterInstall">
@@ -324,6 +390,11 @@
     </div>
 
     <script>
+      // The only place a release URL is written by hand: change this one line to point
+      // the download buttons and the two cards at a mirror. The href attributes above
+      // are just a fallback for a browser with JavaScript turned off.
+      const RELEASES_URL = "https://github.com/z-hhh/aqi-menubar/releases/latest";
+
       const STRINGS = {
         en: {
           h1: "Air quality, one glance away.",
@@ -355,6 +426,15 @@
           openReleases: "Open the releases page",
           openReleases2: "Open the releases page",
           afterInstall: "After installing: open the app, press “Get a free token”, paste the token that arrives by email. That's it.",
+          gateTitle: "First launch is blocked — here is how to open it",
+          gateLede: "It is not a virus. Neither build has a paid signing certificate — the macOS app is ad-hoc signed and not notarised by Apple — so the system warns you once. The download itself is fine.",
+          gateMacTitle: "macOS",
+          gateMacDialog: "First drag the app into Applications — double-clicking it straight from the downloaded disk image runs it from a temporary location, which causes trouble later. Once it is in Applications, double-clicking shows a dialog saying Apple could not verify “AQI Menubar” is free of malware. Nothing in it opens the app — that is the block, not a broken app. If the dialog instead says “AQI Menubar” is damaged and can’t be opened, the download did not finish: download the installer again, and the steps below are not needed.",
+          gateMacA: "Open the app once in Finder — it gets blocked, that is expected. Then go to System Settings → Privacy & Security → Security and press the button next to the notice about the app (usually Open / Open Anyway), confirm, and enter your login password. That button only appears for an hour after the blocked attempt, which is why the double-click comes first.",
+          gateMacB: "On macOS 14 and earlier there is also a shortcut: Control-click the app icon → Open → Open. macOS 15 and later no longer offer it.",
+          gateWinTitle: "Windows",
+          gateWinDialog: "Running the installer may show a blue “Windows protected your PC”. If you don't see it, nothing blocked you — just go ahead and install.",
+          gateWinA: "Click “More info” → “Run anyway”. If the same dialog shows up the first time you start the app, handle it the same way.",
           dataTitle: "Data, and who made it",
           dataBody: "Readings come from the World Air Quality Index project (aqicn.org / waqi.info) and the monitoring agencies that contribute to it. The panel shows the attribution the API returns for every reading — the agency that measured it — as a link, as the platform's terms require.",
           dataBody2: "The app is free and is not affiliated with or endorsed by WAQI. It does not sell, resell, cache or redistribute the data: each client fetches its own readings with its own token.",
@@ -392,6 +472,15 @@
           openReleases: "打开 Releases 页面",
           openReleases2: "打开 Releases 页面",
           afterInstall: "装好之后：打开应用，点“获取免费 token”，把邮件里收到的 token 粘贴进去，就完事了。",
+          gateTitle: "第一次打开会被系统拦住，这里是放行办法",
+          gateLede: "先说清楚：这不是病毒。两个安装包都没买代码签名证书——macOS 版是 ad-hoc 签名、没做苹果公证——所以系统第一次会警告一次。安装包本身没问题。",
+          gateMacTitle: "macOS",
+          gateMacDialog: "先把应用拖进「应用程序」再打开——直接在下载的磁盘映像里双击，系统会从临时位置运行它，之后容易出怪问题。拖好之后双击，会弹一个框：「Apple 无法验证“AQI Menubar”是否包含可能危害 Mac 安全或泄漏隐私的恶意软件。」框里没有能直接打开它的按钮——这就是被拦住了，不是应用坏了。（如果看到的是「“AQI Menubar”已损坏，无法打开」，说明安装包没下完整：重新下一遍安装包就行，不用走下面的步骤。）",
+          gateMacA: "先在访达里双击一次应用——会被拦住，这是预期的。然后打开「系统设置 → 隐私与安全性 → 安全性」，点那条提示旁边那个按钮（英文界面多是 Open / Open Anyway，中文界面多是「打开」或「仍要打开」），确认，再输入开机密码。这个按钮只在尝试打开后一小时内出现，所以要先双击那一下。",
+          gateMacB: "macOS 14 及更早版本还有一条捷径：按住 Control 点按图标 → 选「打开」→ 再点「打开」。macOS 15 及以后的系统已经没有这个菜单项了。",
+          gateWinTitle: "Windows",
+          gateWinDialog: "运行安装包时可能会弹出蓝色的「Windows 已保护你的电脑」。没看到这个提示，说明系统没有拦，直接安装即可。",
+          gateWinA: "点「更多信息」→「仍要运行」。如果首次启动应用时又出现同样的提示，同样处理。",
           dataTitle: "数据，以及数据是谁做的",
           dataBody: "读数来自 World Air Quality Index 项目（aqicn.org / waqi.info）以及为其提供数据的各个监测机构。面板会把 API 返回的署名——也就是实际测量的机构——逐条列成可点击的链接，这是平台条款的要求。",
           dataBody2: "本应用免费，与 WAQI 没有隶属或背书关系。它不售卖、不转售、不缓存归档、不再分发数据：每个客户端用自己的 token 拉自己的读数。",
@@ -429,6 +518,15 @@
           openReleases: "リリースページを開く",
           openReleases2: "リリースページを開く",
           afterInstall: "インストール後:アプリを開き「無料トークンを取得」を押し、メールで届いたトークンを貼り付けるだけです。",
+          gateTitle: "初回起動はブロックされます。開き方は次のとおりです",
+          gateLede: "ウイルスではありません。どちらのビルドもコード署名証明書を購入しておらず（macOS 版は ad-hoc 署名で Apple の公証なし）、そのため初回だけ警告が出ます。ダウンロード自体は正常です。",
+          gateMacTitle: "macOS",
+          gateMacDialog: "まずアプリを「アプリケーション」へ移動してから開いてください。ダウンロードしたディスクイメージから直接ダブルクリックすると、一時的な場所から実行されるため、後で不具合の原因になります。移動後にダブルクリックすると「Apple は“AQI Menubar”に悪意のあるソフトウェアが含まれていないことを検証できませんでした」というダイアログが出ます。そこには、そのまま開けるボタンはありません。これがブロックで、アプリの不具合ではありません。（代わりに「“AQI Menubar”は壊れているため開けません」と出た場合は、ダウンロードが最後まで終わっていません。インストーラーをもう一度ダウンロードしてください。以下の手順は不要です。）",
+          gateMacA: "まず Finder でアプリを一度ダブルクリックします（ブロックされますが想定内です）。次に「システム設定 → プライバシーとセキュリティ → セキュリティ」で、その通知の横にあるボタン（英語では Open / Open Anyway、日本語では「開く」「このまま開く」など）を押し、確認してからログインパスワードを入力します。このボタンはブロックを試みてから 1 時間だけ表示されるため、先にダブルクリックが必要です。",
+          gateMacB: "macOS 14 以前には近道もあります:Control キーを押しながらアイコンをクリック →「開く」→「開く」。macOS 15 以降にはこのメニュー項目はありません。",
+          gateWinTitle: "Windows",
+          gateWinDialog: "インストーラーを実行すると、青い「Windows によって PC が保護されました」が表示されることがあります。表示されない場合はブロックされていないので、そのままインストールしてください。",
+          gateWinA: "「詳細情報」→「実行」をクリック。初回起動時に同じダイアログが出た場合も同じように対応してください。",
           dataTitle: "データと、その提供元",
           dataBody: "観測値は World Air Quality Index プロジェクト（aqicn.org / waqi.info）と、そこにデータを提供する観測機関によるものです。パネルは API が返す帰属情報——実際に測定した機関——をリンクとして表示します。これはプラットフォームの利用条件によるものです。",
           dataBody2: "本アプリは無料で、WAQI とは提携・推奨関係にありません。データの販売・再販・キャッシュ・再配布は行いません。各クライアントが自分のトークンで取得します。",
@@ -466,6 +564,10 @@
         btn.addEventListener("click", () => apply(btn.dataset.lang));
       });
       apply(initial);
+
+      document.querySelectorAll("[data-release]").forEach((a) => {
+        a.href = RELEASES_URL;
+      });
 
       // Highlight the download button that matches this machine.
       const platform = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
