@@ -33,8 +33,9 @@
 ## Install
 
 Take the `.dmg` (macOS) or the installer (Windows) from
-[Releases](https://github.com/z-hhh/aqi-menubar/releases/latest). Both builds update themselves in
-place from the signed release feed.
+[Releases](https://github.com/z-hhh/aqi-menubar/releases/latest). Both builds are signed and carry a
+built-in updater; an in-place update has not been verified end to end yet, so install the new build
+from that page for now.
 
 The macOS build is ad-hoc signed, not notarised, so the first launch is blocked by Gatekeeper. The
 dialog only offers **Done** and **Move to Trash** — there is no Open button in it, and that is the
