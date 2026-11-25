@@ -211,6 +211,16 @@ button {
   font-weight: 600;
 }
 
+/* ---- separator between "now" and the timeline ---- */
+
+/* The panel's own 12px gap is eaten either side, so drawing the rule costs
+   about 5px of height rather than 25. */
+.sep {
+  height: 0;
+  border-top: 1px solid var(--line);
+  margin: -3px 0;
+}
+
 /* ---- sources ---- */
 
 .sources {
@@ -260,9 +270,18 @@ button {
 
 .foot {
   display: flex;
+  align-items: center;
   gap: 8px;
   border-top: 1px solid var(--line);
   padding-top: 9px;
+}
+
+.version {
+  flex: 0 0 auto;
+  font-size: 10px;
+  letter-spacing: 0.2px;
+  color: var(--muted);
+  user-select: text;
 }
 
 .ghost {
