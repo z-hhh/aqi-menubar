@@ -84,6 +84,13 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
 - **Panel** (click the tray item): AQI badge and category, station name, station reading time,
   PM2.5 / PM10 / O₃ / NO₂ / SO₂ / CO, main pollutant, temperature, humidity and wind, and the
   full list of upstream data sources as clickable links.
+- **Trend** (bottom of the panel): this machine's own readings as a thin line, and aqicn's daily
+  forecast as a faint min–max band with a dashed daily mean, sharing one axis from yesterday to
+  the day after tomorrow. The forecast already arrives as AQI — aqicn converts it with the same
+  EPA table it uses for the reading — so the two are comparable without rescaling. It is drawn
+  only from now onwards, and the observed line breaks where the app was not running instead of
+  drawing straight over the gap. aqicn publishes no hourly history, so the past side starts empty
+  and fills in as the app runs (per station, kept 7 days, on disk).
 - **Location**: automatic (aqicn resolves it from your IP), a city or station name, or a
   specific station picked from search.
 - **Refresh interval**: 5–60 minutes. aqicn stations publish hourly, so anything faster only
