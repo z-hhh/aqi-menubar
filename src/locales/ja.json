@@ -12,7 +12,9 @@
   "chart": {
     "title": "推移",
     "observed": "実測",
-    "forecast": "予報"
+    "forecast": "予報",
+    "avg": "日平均",
+    "range": "範囲"
   },
   "onboard": {
     "title": "1分でセットアップ",

@@ -12,7 +12,9 @@
   "chart": {
     "title": "Trend",
     "observed": "Measured",
-    "forecast": "Forecast"
+    "forecast": "Forecast",
+    "avg": "daily avg",
+    "range": "range"
   },
   "onboard": {
     "title": "Set up in a minute",

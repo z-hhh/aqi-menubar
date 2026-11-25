@@ -819,3 +819,35 @@ body.mock-preview #root {
   fill: var(--muted);
   text-anchor: middle;
 }
+
+.chart-hit {
+  cursor: crosshair;
+}
+
+.chart-guide {
+  stroke: var(--fg);
+  stroke-width: 1;
+  opacity: 0.28;
+}
+
+.chart-hover-dot {
+  fill: var(--bg);
+  stroke-width: 1.8;
+}
+
+.chart-tip-box {
+  fill: var(--bg);
+  stroke: var(--line);
+  stroke-width: 0.8;
+}
+
+.chart-tip-label {
+  font-size: 8.5px;
+  fill: var(--muted);
+}
+
+.chart-tip-value {
+  font-size: 9.5px;
+  fill: var(--fg);
+  font-variant-numeric: tabular-nums;
+}

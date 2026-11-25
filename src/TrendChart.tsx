@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { categoryColor, categoryOf } from "./aqi";
 import type { AppState, Band, ForecastDay } from "./types";
@@ -24,6 +24,13 @@ const PAD_R = 5;
 const AXIS_H = 13;
 const H = PLOT_TOP + PLOT_H + AXIS_H;
 
+const TIP_LABEL_SIZE = 8.5;
+const TIP_VALUE_SIZE = 9.5;
+/** Line height and vertical padding of the hover tooltip, in viewBox units. */
+const TIP_LH = 11;
+const TIP_PAD_Y = 4;
+const TIP_H = TIP_LH * 2 + TIP_PAD_Y;
+
 /** AQI band edges, for the faint background stripes. */
 const EDGES = [50, 100, 150, 200, 300];
 const EDGE_NAMES = ["good", "moderate", "sensitive", "unhealthy", "veryUnhealthy"] as const;
@@ -31,6 +38,31 @@ const EDGE_NAMES = ["good", "moderate", "sensitive", "unhealthy", "veryUnhealthy
 interface Point {
   t: number;
   v: number;
+}
+
+interface Hover {
+  key: string;
+  t: number;
+  v: number;
+  label: string;
+  value: string;
+}
+
+/**
+ * Rough advance width for sizing the tooltip box without measuring text.
+ * Full-width characters are square; digits and punctuation are narrow.
+ */
+function textWidth(text: string, size: number): number {
+  let width = 0;
+  for (const ch of text) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (ch === " ") width += size * 0.28;
+    else if (code > 0x2e7f) width += size;
+    else if (ch >= "0" && ch <= "9") width += size * 0.6;
+    else if (".,:·–-".includes(ch)) width += size * 0.32;
+    else width += size * 0.58;
+  }
+  return width;
 }
 
 function midnightOf(ts: number): number {
@@ -88,6 +120,8 @@ function segments(points: Point[], gapLimit: number): Point[][] {
 export default function TrendChart({ state }: { state: AppState }) {
   const { t, i18n } = useTranslation();
   const snapshot = state.snapshot;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
 
   const model = useMemo(() => {
     const observed: Point[] = state.history
@@ -138,18 +172,104 @@ export default function TrendChart({ state }: { state: AppState }) {
   const y = (value: number) => PLOT_TOP + PLOT_H - (Math.min(value, yMax) / yMax) * PLOT_H;
 
   const gapLimit = Math.max(3 * state.config.refreshMinutes * 60_000, 90 * 60_000);
+  const snapLimit = Math.max(gapLimit, 2 * HOUR);
   const runs = segments(
     observed.filter((p) => p.t >= start && p.t <= end),
     gapLimit,
   );
 
   const dayFormat = new Intl.DateTimeFormat(i18n.language, { month: "numeric", day: "numeric" });
+  const stampFormat = new Intl.DateTimeFormat(i18n.language, {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
   const ticks: number[] = [];
   for (let day = start; day < end; day += DAY) ticks.push(day);
 
   const last = observed[observed.length - 1];
   const gridlines = [EDGES[1], EDGES[3]].filter((value) => value < yMax);
   const forecastLabel = code ? t(`pollutants.${code}`) : "";
+
+  // Measurements and forecast days are not equally dense: a cache point is a
+  // single reading, a forecast day is a range. Hovering snaps to whichever of
+  // the two owns the pointer's time, so the number in the tooltip is always a
+  // value that exists rather than an interpolation between two.
+  function targetAt(ts: number): Hover | null {
+    if (ts >= now && forecast.length > 0) {
+      const inside = forecast.find((d) => ts >= d.t && ts < d.t + DAY);
+      const day =
+        inside ??
+        forecast.reduce((best, d) =>
+          Math.abs(d.t + DAY / 2 - ts) < Math.abs(best.t + DAY / 2 - ts) ? d : best,
+        );
+      return {
+        key: `f${day.t}`,
+        // Today's centre is already in the past, where this day's band is not
+        // drawn; park the marker at the edge of what is visible instead of
+        // floating it over this morning's measured line.
+        t: Math.max(day.t + DAY / 2, now),
+        v: day.band.avg,
+        label: `${dayFormat.format(day.t)} · ${t("chart.forecast")}${forecastLabel ? ` · ${forecastLabel}` : ""}`,
+        value: `${t("chart.avg")} ${Math.round(day.band.avg)} · ${t("chart.range")} ${Math.round(day.band.min)}–${Math.round(day.band.max)}`,
+      };
+    }
+
+    let best: Point | null = null;
+    let distance = Infinity;
+    for (const point of observed) {
+      if (point.t < start || point.t > end) continue;
+      const gap = Math.abs(point.t - ts);
+      if (gap < distance) {
+        distance = gap;
+        best = point;
+      }
+    }
+    // Past a real gap in the cache there is nothing to report; snapping a
+    // reading from three hours away would misdate it.
+    if (!best || distance > snapLimit) return null;
+    return {
+      key: `o${best.t}`,
+      t: best.t,
+      v: best.v,
+      label: `${stampFormat.format(best.t)} · ${t("chart.observed")}`,
+      value: `AQI ${Math.round(best.v)} · ${t(`aqi.${categoryOf(best.v)}`)}`,
+    };
+  }
+
+  function onPointerMove(event: React.PointerEvent<SVGRectElement>) {
+    const svg = svgRef.current;
+    const matrix = svg?.getScreenCTM();
+    if (!svg || !matrix) return;
+    // The SVG scales with the panel (and may letterbox), so map through its
+    // own matrix instead of assuming 1 viewBox unit = 1 CSS pixel.
+    const point = svg.createSVGPoint();
+    point.x = event.clientX;
+    point.y = event.clientY;
+    const local = point.matrixTransform(matrix.inverse());
+    const clamped = Math.min(Math.max(local.x, PAD_L), W - PAD_R);
+    const next = targetAt(start + ((clamped - PAD_L) / plotW) * (end - start));
+    setHover((current) => (current?.key === next?.key ? current : next));
+  }
+
+  const tip = (() => {
+    if (!hover) return null;
+    // Generous side padding: the estimator is approximate, and a tooltip that
+    // is a few units too wide reads fine, one that clips its text does not.
+    const width = Math.max(textWidth(hover.label, TIP_LABEL_SIZE), textWidth(hover.value, TIP_VALUE_SIZE)) + 17;
+    const pointX = x(hover.t);
+    const pointY = y(hover.v);
+    // Keep the box inside the plot, so it never covers the y-axis labels.
+    const left = Math.max(PAD_L, Math.min(pointX - width / 2, W - PAD_R - width));
+    // Above the point if it fits, below otherwise, always inside the plot so
+    // it never covers the legend row.
+    let top = pointY - TIP_H - 5;
+    if (top < PLOT_TOP + 1) top = pointY + 7;
+    if (top + TIP_H > PLOT_TOP + PLOT_H - 1) top = PLOT_TOP + PLOT_H - 1 - TIP_H;
+    return { width, left, top };
+  })();
 
   return (
     <section className="chart" aria-label={t("chart.title")}>
@@ -167,6 +287,7 @@ export default function TrendChart({ state }: { state: AppState }) {
       </div>
 
       <svg
+        ref={svgRef}
         className="chart-svg"
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
@@ -293,6 +414,53 @@ export default function TrendChart({ state }: { state: AppState }) {
             </text>
           );
         })}
+
+        {hover && tip && (
+          <g pointerEvents="none">
+            <line
+              className="chart-guide"
+              x1={x(hover.t)}
+              x2={x(hover.t)}
+              y1={PLOT_TOP}
+              y2={PLOT_TOP + PLOT_H}
+            />
+            <circle
+              className="chart-hover-dot"
+              cx={x(hover.t)}
+              cy={y(hover.v)}
+              r={2.8}
+              stroke={categoryColor[categoryOf(hover.v)]}
+            />
+            <rect
+              className="chart-tip-box"
+              x={tip.left}
+              y={tip.top}
+              width={tip.width}
+              height={TIP_H}
+              rx={3}
+            />
+            <text className="chart-tip-label" x={tip.left + 4.5} y={tip.top + 11}>
+              {hover.label}
+            </text>
+            <text className="chart-tip-value" x={tip.left + 4.5} y={tip.top + 11 + TIP_LH}>
+              {hover.value}
+            </text>
+          </g>
+        )}
+
+        {/* Transparent capture area: the whole plot is a hover surface, and it
+            sits last so it is above everything it describes. */}
+        <rect
+          className="chart-hit"
+          x={PAD_L}
+          y={PLOT_TOP}
+          width={plotW}
+          height={PLOT_H}
+          fill="transparent"
+          pointerEvents="all"
+          onPointerMove={onPointerMove}
+          onPointerLeave={() => setHover(null)}
+        />
       </svg>
     </section>
   );

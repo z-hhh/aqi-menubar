@@ -91,6 +91,7 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
   only from now onwards, and the observed line breaks where the app was not running instead of
   drawing straight over the gap. aqicn publishes no hourly history, so the past side starts empty
   and fills in as the app runs (per station, kept 7 days, on disk).
+  Hover a point to read its time and value.
 - **Location**: automatic (aqicn resolves it from your IP), a city or station name, or a
   specific station picked from search.
 - **Refresh interval**: 5–60 minutes. aqicn stations publish hourly, so anything faster only

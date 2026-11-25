@@ -12,7 +12,9 @@
   "chart": {
     "title": "趋势",
     "observed": "实测",
-    "forecast": "预报"
+    "forecast": "预报",
+    "avg": "日均",
+    "range": "区间"
   },
   "onboard": {
     "title": "一分钟就能用上",
