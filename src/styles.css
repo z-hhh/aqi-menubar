@@ -720,3 +720,102 @@ body.mock-preview #root {
 .update .error {
   flex: 1 0 100%;
 }
+
+/* ---- trend chart ---- */
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.chart-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chart-swatch {
+  display: inline-block;
+}
+
+.chart-swatch.line {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--fg);
+}
+
+.chart-swatch.band {
+  width: 12px;
+  height: 7px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.chart-svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.chart-band {
+  fill: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.chart-forecast-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2.5;
+  opacity: 0.85;
+}
+
+.chart-line {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart-dot {
+  fill: var(--fg);
+}
+
+.chart-current {
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.chart-now {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.45;
+}
+
+.chart-ylabel {
+  font-size: 8.5px;
+  fill: var(--muted);
+  text-anchor: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-xlabel {
+  font-size: 9px;
+  fill: var(--muted);
+  text-anchor: middle;
+}

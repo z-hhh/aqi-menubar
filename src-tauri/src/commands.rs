@@ -1,5 +1,6 @@
 use crate::{
     aqicn::{self, Snapshot, StationHit},
+    history::Obs,
     config::{Config, TrayDisplay},
     tray, AppState, EVENT_UPDATE,
 };
@@ -27,6 +28,8 @@ pub struct AppStateDto {
     /// Whether a token is stored, so the UI can tell "none yet" from "saved".
     pub token_set: bool,
     pub snapshot: Option<Snapshot>,
+    /// Readings this client has seen for the station on screen, oldest first.
+    pub history: Vec<Obs>,
     pub error: Option<String>,
     /// The language actually in effect ("auto" already resolved).
     pub resolved_language: String,
@@ -38,11 +41,17 @@ pub struct AppStateDto {
 
 pub fn dto(state: &AppState) -> AppStateDto {
     let stored = state.config.lock().unwrap().clone();
+    let snapshot = state.snapshot.lock().unwrap().clone();
+    let history = match snapshot.as_ref() {
+        Some(snapshot) => state.history.lock().unwrap().for_station(&snapshot.station),
+        None => Vec::new(),
+    };
     AppStateDto {
         resolved_language: stored.resolved_language(),
         token_set: stored.has_token(),
         config: stored.without_token(),
-        snapshot: state.snapshot.lock().unwrap().clone(),
+        snapshot,
+        history,
         error: state.error.lock().unwrap().clone(),
         platform: std::env::consts::OS.to_string(),
         update: state.update.lock().unwrap().clone(),
@@ -174,7 +183,7 @@ mod tests {
             token: "secret-token".into(),
             ..Config::default()
         };
-        let state = AppState::new(cfg);
+        let state = AppState::new(cfg, Default::default());
         let dto = dto(&state);
         assert!(dto.token_set);
         assert!(dto.config.token.is_empty());
@@ -188,7 +197,7 @@ mod tests {
 
     #[test]
     fn without_a_token_the_ui_is_told_there_is_none() {
-        let state = AppState::new(Config::default());
+        let state = AppState::new(Config::default(), Default::default());
         let dto = dto(&state);
         assert!(!dto.token_set);
         assert!(dto.config.token.is_empty());

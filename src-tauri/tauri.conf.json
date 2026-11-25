@@ -16,7 +16,7 @@
         "label": "main",
         "title": "AQI Menubar",
         "width": 340,
-        "height": 520,
+        "height": 600,
         "resizable": false,
         "decorations": false,
         "transparent": false,

@@ -9,6 +9,11 @@
     "refresh": "Refresh",
     "settings": "Settings"
   },
+  "chart": {
+    "title": "Trend",
+    "observed": "Measured",
+    "forecast": "Forecast"
+  },
   "onboard": {
     "title": "Set up in a minute",
     "subtitle": "AQI Menubar reads the air where you are, with your own free aqicn token.",

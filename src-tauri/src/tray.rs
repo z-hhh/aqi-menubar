@@ -706,6 +706,8 @@ mod tests {
             stale: false,
             pollutants,
             attributions: vec![],
+            observed_at: None,
+            forecast: vec![],
             fetched_at: 0,
         }
     }

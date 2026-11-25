@@ -2,6 +2,7 @@ mod aqicn;
 mod commands;
 mod config;
 #[cfg_attr(target_os = "macos", allow(dead_code))]
+mod history;
 mod icons;
 mod level;
 mod tray;
@@ -16,6 +17,8 @@ pub const EVENT_UPDATE: &str = "aqi://update";
 pub struct AppState {
     pub config: Mutex<config::Config>,
     pub snapshot: Mutex<Option<aqicn::Snapshot>>,
+    /// Readings seen so far, for the in-day curve.
+    pub history: Mutex<history::History>,
     pub error: Mutex<Option<String>>,
     /// The newest release the updater knows about, if any.
     pub update: Mutex<Option<UpdateInfo>>,
@@ -26,10 +29,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    fn new(config: config::Config) -> Self {
+    fn new(config: config::Config, history: history::History) -> Self {
         Self {
             config: Mutex::new(config),
             snapshot: Mutex::new(None),
+            history: Mutex::new(history),
             error: Mutex::new(None),
             update: Mutex::new(None),
             installing: Mutex::new(false),
@@ -49,6 +53,9 @@ async fn poll_loop(app: AppHandle, state: Arc<AppState>) {
         } else {
             match aqicn::fetch(&cfg).await {
                 Ok(snapshot) => {
+                    // Keep the point before the panel can ask for it; the
+                    // first curve appears after a couple of polls.
+                    state.history.lock().unwrap().record(&snapshot);
                     *state.snapshot.lock().unwrap() = Some(snapshot.clone());
                     *state.error.lock().unwrap() = None;
                     tray::update(&app, &snapshot, &cfg.tray, &cfg.resolved_language());
@@ -134,7 +141,8 @@ pub fn run() {
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             let cfg = config::Config::load(app.handle());
-            let state = Arc::new(AppState::new(cfg.clone()));
+            let history = history::History::load(app.handle());
+            let state = Arc::new(AppState::new(cfg.clone(), history));
             app.manage(state.clone());
 
             tray::create(app.handle(), &cfg)?;

@@ -1,6 +1,6 @@
 // Development-only stand-in for the Rust backend, so the panel can be built and
 // reviewed in a plain browser (`pnpm dev`). Never reached inside the app.
-import type { AppState, Config, SaveConfig, StationHit } from "./types";
+import type { AppState, Config, ForecastDay, Obs, SaveConfig, StationHit } from "./types";
 
 const params = new URLSearchParams(window.location.search);
 const lang = params.get("lang") ?? "auto";
@@ -37,6 +37,60 @@ function baseConfig(): Config {
   };
 }
 
+const STATION = "Shanghai (上海)";
+
+/**
+ * A plausible day curve so the panel can be reviewed in a browser. Real
+ * readings only accumulate while the app runs; this is never reached inside
+ * the app.
+ */
+function mockHistory(aqi: number): Obs[] {
+  const now = Date.now();
+  const step = 30 * 60_000;
+  const start = now - 40 * 60 * 60_000;
+  const out: Obs[] = [];
+  for (let t = start; t <= now; t += step) {
+    const hour = new Date(t).getHours();
+    // Was the app closed overnight? Leave a real gap, not a straight line.
+    if (hour >= 1 && hour < 6 && t < now - 12 * 3_600_000) continue;
+    const swing = Math.sin(((hour - 4) / 24) * Math.PI * 2) * 22;
+    const drift = Math.sin((t - start) / (12 * 3_600_000)) * 11;
+    out.push({
+      station: STATION,
+      observedAt: Math.floor(t / 1000),
+      aqi: Math.max(3, Math.round(aqi + swing + drift)),
+      pm25: null,
+    });
+  }
+  // End on the reading the panel shows, so the dot sits on the line.
+  const last = out[out.length - 1];
+  if (last) {
+    const shift = aqi - (last.aqi ?? aqi);
+    for (const point of out) point.aqi = Math.max(3, (point.aqi ?? aqi) + shift);
+  }
+  return out;
+}
+
+/** aqicn's real shape: today plus a few days, min/avg/max per day. */
+function mockForecast(aqi: number): ForecastDay[] {
+  const out: ForecastDay[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const shape = [1.05, 0.82, 1.4, 1.15, 0.7];
+  for (let i = 0; i < shape.length; i++) {
+    const day = new Date(today.getTime() + i * 86_400_000);
+    const avg = Math.round(aqi * shape[i]);
+    const month = String(day.getMonth() + 1).padStart(2, "0");
+    const date = String(day.getDate()).padStart(2, "0");
+    out.push({
+      day: `${day.getFullYear()}-${month}-${date}`,
+      pm25: { avg, min: Math.round(avg * 0.62), max: Math.round(avg * 1.36) },
+      pm10: { avg: Math.round(avg * 0.5), min: Math.round(avg * 0.3), max: Math.round(avg * 0.8) },
+    });
+  }
+  return out;
+}
+
 function updateInfo() {
   return updateParam
     ? { version: updateParam, currentVersion: "0.1.0", notes: "Fixes and a smaller tray title." }
@@ -54,6 +108,7 @@ export function sampleState(): AppState {
       platform: "macos",
       update: null,
       installing: false,
+      history: [],
     };
   }
   const aqi = aqiParam ? Number(aqiParam) : 50;
@@ -65,6 +120,7 @@ export function sampleState(): AppState {
     platform: "macos",
     update: updateInfo(),
     installing: false,
+    history: mockHistory(aqi),
     snapshot: {
       aqi,
       station: "Shanghai (上海)",
@@ -84,6 +140,8 @@ export function sampleState(): AppState {
         { code: "w", value: 5.6 },
       ],
       attributions: ATTRIBUTIONS,
+      observedAt: Math.floor(Date.now() / 1000) - 62 * 60,
+      forecast: mockForecast(aqi),
       fetchedAt: Math.floor(Date.now() / 1000),
     },
   };

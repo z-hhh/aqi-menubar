@@ -9,6 +9,11 @@
     "refresh": "更新",
     "settings": "設定"
   },
+  "chart": {
+    "title": "推移",
+    "observed": "実測",
+    "forecast": "予報"
+  },
   "onboard": {
     "title": "1分でセットアップ",
     "subtitle": "無料の aqicn トークンで、今いる場所の大気質を表示します。",

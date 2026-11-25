@@ -12,6 +12,7 @@ import {
   unitOf,
 } from "./aqi";
 import { bridge } from "./bridge";
+import TrendChart from "./TrendChart";
 import type { AppState, Pollutant } from "./types";
 
 const MAIN_CODES = ["pm25", "pm10", "o3", "no2", "so2", "co"];
@@ -214,6 +215,8 @@ export default function Panel({ state, onOpenSettings }: Props) {
           <span className="notice-detail"> {state.error}</span>
         </p>
       )}
+
+      <TrendChart state={state} />
 
       {visible.length > 0 && (
         <section className="grid">

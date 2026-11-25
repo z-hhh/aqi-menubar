@@ -39,6 +39,33 @@ export interface Attribution {
   url: string | null;
 }
 
+/**
+ * One day of aqicn's forecast. Values are already on the AQI scale — the same
+ * one `iaqi` uses — so they can share an axis with a station reading.
+ */
+export interface Band {
+  avg: number;
+  min: number;
+  max: number;
+}
+
+export interface ForecastDay {
+  /** "YYYY-MM-DD", station local date. */
+  day: string;
+  pm25?: Band;
+  pm10?: Band;
+  o3?: Band;
+}
+
+/** One reading this client saw, kept locally: aqicn has no history endpoint. */
+export interface Obs {
+  station: string;
+  /** Unix seconds of the measurement, not of the fetch. */
+  observedAt: number;
+  aqi: number | null;
+  pm25: number | null;
+}
+
 export interface Snapshot {
   aqi: number | null;
   station: string;
@@ -48,6 +75,10 @@ export interface Snapshot {
   stale: boolean;
   pollutants: Pollutant[];
   attributions: Attribution[];
+  /** Station measurement time, Unix seconds. */
+  observedAt: number | null;
+  /** Daily forecast from the same response, oldest first. */
+  forecast: ForecastDay[];
   fetchedAt: number;
 }
 
@@ -68,6 +99,8 @@ export interface AppState {
   /** A token is stored. The token itself is never exposed. */
   tokenSet: boolean;
   snapshot: Snapshot | null;
+  /** Readings seen for the station on screen, oldest first. */
+  history: Obs[];
   error: string | null;
   resolvedLanguage: string;
   /** "macos" | "windows" | "linux" */

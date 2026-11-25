@@ -33,6 +33,31 @@ pub struct Attribution {
     pub url: Option<String>,
 }
 
+/// One day of aqicn's forecast: already expressed on the AQI scale, the same
+/// one `iaqi` uses, so it can share a y axis with the station reading.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Band {
+    pub avg: f64,
+    pub min: f64,
+    pub max: f64,
+}
+
+/// A forecast day. aqicn sends one array per pollutant; a day is present only
+/// where that pollutant has a value.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForecastDay {
+    /// "YYYY-MM-DD", station local date.
+    pub day: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pm25: Option<Band>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pm10: Option<Band>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub o3: Option<Band>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
@@ -46,6 +71,14 @@ pub struct Snapshot {
     pub stale: bool,
     pub pollutants: Vec<Pollutant>,
     pub attributions: Vec<Attribution>,
+    /// Unix seconds of the station reading. aqicn's own `time.v`, which is
+    /// the measurement time, not the request time.
+    #[serde(default)]
+    pub observed_at: Option<i64>,
+    /// Daily forecast from the same response, oldest first. Empty when the
+    /// station publishes none.
+    #[serde(default)]
+    pub forecast: Vec<ForecastDay>,
     /// Unix seconds when this client fetched it.
     pub fetched_at: i64,
 }
@@ -182,6 +215,13 @@ pub fn parse_feed(body: &Value) -> Result<Snapshot, ApiError> {
         })
         .unwrap_or_default();
 
+    let observed_at = data
+        .get("time")
+        .and_then(|t| t.get("v"))
+        .and_then(Value::as_i64);
+
+    let forecast = parse_forecast(data, observed_at);
+
     Ok(Snapshot {
         aqi,
         station,
@@ -191,8 +231,111 @@ pub fn parse_feed(body: &Value) -> Result<Snapshot, ApiError> {
         stale: false,
         pollutants,
         attributions,
+        observed_at,
+        forecast,
         fetched_at: now_secs(),
     })
+}
+
+/// Days a forecast is allowed to cover around the station reading. aqicn sends
+/// two days back and about six forward; anything outside that is stale data
+/// left in the feed (some stations carry a year-old o3 row).
+const FORECAST_BACK_DAYS: i64 = 2;
+const FORECAST_FORWARD_DAYS: i64 = 8;
+
+/// Days since 1970-01-01 for a civil date (Howard Hinnant's algorithm). Enough
+/// date math for the forecast window without pulling in a date crate.
+fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let mp = (m + 9) % 12;
+    let doy = (153 * mp + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    era * 146097 + doe - 719468
+}
+
+fn day_number(ymd: &str) -> Option<i64> {
+    let mut parts = ymd.split('-');
+    let y: i64 = parts.next()?.trim().parse().ok()?;
+    let m: i64 = parts.next()?.trim().parse().ok()?;
+    let d: i64 = parts.next()?.trim().parse().ok()?;
+    if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
+        return None;
+    }
+    Some(days_from_civil(y, m, d))
+}
+
+fn band_from(item: &Value) -> Option<Band> {
+    let num = |key: &str| item.get(key).and_then(Value::as_f64);
+    let avg = num("avg")?;
+    let min = num("min").unwrap_or(avg);
+    let max = num("max").unwrap_or(avg);
+    // -1 is aqicn's "no reading".
+    if avg < 0.0 {
+        return None;
+    }
+    Some(Band {
+        avg,
+        min: min.min(avg),
+        max: max.max(avg),
+    })
+}
+
+/// Merge `forecast.daily.{pm25,pm10,o3}` into one row per day, dropping days
+/// outside the window around the reading.
+pub fn parse_forecast(data: &Value, observed_at: Option<i64>) -> Vec<ForecastDay> {
+    let Some(daily) = data.get("forecast").and_then(|f| f.get("daily")) else {
+        return Vec::new();
+    };
+    // Without a reading time there is no window to filter by, so trust what
+    // the feed sent rather than dropping everything.
+    let window = observed_at.map(|t| {
+        let anchor = t.div_euclid(86_400);
+        (
+            anchor - FORECAST_BACK_DAYS,
+            anchor + FORECAST_FORWARD_DAYS,
+        )
+    });
+
+    let mut days: Vec<ForecastDay> = Vec::new();
+    for code in ["pm25", "pm10", "o3"] {
+        let Some(rows) = daily.get(code).and_then(Value::as_array) else {
+            continue;
+        };
+        for item in rows {
+            let Some(day) = item.get("day").and_then(Value::as_str) else {
+                continue;
+            };
+            if let Some((lo, hi)) = window {
+                match day_number(day) {
+                    Some(n) if n >= lo && n <= hi => {}
+                    _ => continue,
+                }
+            }
+            let Some(band) = band_from(item) else {
+                continue;
+            };
+            let slot = match days.iter_mut().find(|d| d.day == day) {
+                Some(slot) => slot,
+                None => {
+                    days.push(ForecastDay {
+                        day: day.to_string(),
+                        ..ForecastDay::default()
+                    });
+                    days.last_mut().unwrap()
+                }
+            };
+            match code {
+                "pm25" => slot.pm25 = Some(band),
+                "pm10" => slot.pm10 = Some(band),
+                _ => slot.o3 = Some(band),
+            }
+        }
+    }
+
+    days.sort_by(|a, b| a.day.cmp(&b.day));
+    days
 }
 
 pub async fn search(cfg: &Config, keyword: &str) -> Result<Vec<StationHit>, ApiError> {
@@ -354,15 +497,92 @@ mod tests {
         };
         let snap = fetch(&cfg).await.expect("live fetch should succeed");
         println!(
-            "aqi={:?} station={} pollutants={} attributions={}",
+            "aqi={:?} station={} pollutants={} attributions={} forecast_days={}",
             snap.aqi,
             snap.station,
             snap.pollutants.len(),
-            snap.attributions.len()
+            snap.attributions.len(),
+            snap.forecast.len()
         );
+        for day in &snap.forecast {
+            println!(
+                "  {} pm25={:?} pm10={:?} o3={:?}",
+                day.day, day.pm25, day.pm10, day.o3
+            );
+        }
         assert!(!snap.station.is_empty(), "station name should be present");
         assert!(snap.aqi.is_some(), "aqi should parse");
         assert!(!snap.attributions.is_empty(), "attributions must be present");
+    }
+
+    const FORECAST_BODY: &str = r#"{
+      "status": "ok",
+      "data": {
+        "aqi": 124,
+        "idx": 1437,
+        "dominentpol": "pm25",
+        "city": {"name": "Shanghai (上海)"},
+        "iaqi": {"pm25": {"v": 124}, "pm10": {"v": 56}},
+        "time": {"s": "2026-11-25 14:00:00", "v": 1795615200, "iso": "2026-11-25T14:00:00+08:00"},
+        "forecast": {
+          "daily": {
+            "pm25": [
+              {"avg": 171, "day": "2026-11-23", "max": 171, "min": 171},
+              {"avg": 130, "day": "2026-11-24", "max": 171, "min": 40},
+              {"avg": 221, "day": "2026-11-25", "max": 302, "min": 165}
+            ],
+            "pm10": [
+              {"avg": 52, "day": "2026-11-24", "max": 70, "min": 12},
+              {"avg": 70, "day": "2026-11-25", "max": 70, "min": 70}
+            ],
+            "o3": [
+              {"avg": 1, "day": "2025-04-05", "max": 1, "min": 1}
+            ]
+          }
+        }
+      }
+    }"#;
+
+    #[test]
+    fn the_forecast_lands_on_one_row_per_day() {
+        let body: Value = serde_json::from_str(FORECAST_BODY).unwrap();
+        let snap = parse_feed(&body).unwrap();
+        assert_eq!(snap.observed_at, Some(1_795_615_200));
+        // 11-23, 11-24, 11-25. The 2025 o3 row is outside the window.
+        assert_eq!(snap.forecast.len(), 3);
+        assert_eq!(snap.forecast[0].day, "2026-11-23");
+        assert!(snap.forecast[0].pm10.is_none());
+        let today = snap
+            .forecast
+            .iter()
+            .find(|d| d.day == "2026-11-25")
+            .expect("today");
+        let pm25 = today.pm25.as_ref().expect("pm25 band");
+        assert_eq!((pm25.avg, pm25.min, pm25.max), (221.0, 165.0, 302.0));
+        assert!(today.o3.is_none(), "stale o3 row must not survive");
+    }
+
+    #[test]
+    fn a_feed_without_forecast_is_still_fine() {
+        let body: Value = serde_json::from_str(
+            r#"{"status":"ok","data":{"aqi":50,"city":{"name":"X"},"iaqi":{}}}"#,
+        )
+        .unwrap();
+        let snap = parse_feed(&body).unwrap();
+        assert!(snap.forecast.is_empty());
+        assert_eq!(snap.observed_at, None);
+    }
+
+    #[test]
+    fn a_band_never_inverts_its_min_and_max() {
+        let body: Value = serde_json::from_str(
+            r#"{"status":"ok","data":{"aqi":10,"time":{"v":1795615200},
+                "forecast":{"daily":{"pm25":[{"avg":50,"day":"2026-11-25","max":10,"min":90}]}}}}"#,
+        )
+        .unwrap();
+        let snap = parse_feed(&body).unwrap();
+        let band = snap.forecast[0].pm25.as_ref().unwrap();
+        assert!(band.min <= band.avg && band.avg <= band.max);
     }
 
     #[test]
