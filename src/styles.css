@@ -515,7 +515,7 @@ body.mock-preview {
 
 body.mock-preview #root {
   width: 340px;
-  height: 520px;
+  height: 600px;
   margin: 0 auto;
   border-radius: 12px;
   overflow: hidden;

@@ -216,8 +216,6 @@ export default function Panel({ state, onOpenSettings }: Props) {
         </p>
       )}
 
-      <TrendChart state={state} />
-
       {visible.length > 0 && (
         <section className="grid">
           {visible.map((p) => (
@@ -240,6 +238,8 @@ export default function Panel({ state, onOpenSettings }: Props) {
         {humidity && <span>{Math.round(humidity.value)}%</span>}
         {wind && <span>{wind.value} m/s</span>}
       </section>
+
+      <TrendChart state={state} />
 
       <section className="sources">
         <div className="sources-title">{t("panel.sources")}</div>
