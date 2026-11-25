@@ -239,6 +239,11 @@ export default function Panel({ state, onOpenSettings }: Props) {
         {wind && <span>{wind.value} m/s</span>}
       </section>
 
+      {/* Everything above is a reading of right now; the chart below is a
+          timeline that runs from yesterday into tomorrow. The rule keeps the
+          two from reading as one block. */}
+      <div className="sep" aria-hidden="true" />
+
       <TrendChart state={state} />
 
       <section className="sources">
@@ -273,6 +278,7 @@ export default function Panel({ state, onOpenSettings }: Props) {
         <button type="button" className="ghost" onClick={() => onOpenSettings()}>
           <SettingsIcon /> {t("panel.settings")}
         </button>
+        <span className="version">v{__APP_VERSION__}</span>
       </footer>
     </div>
   );
