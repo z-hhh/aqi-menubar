@@ -1,6 +1,6 @@
 [package]
 name = "aqi-menubar"
-version = "0.3.2"
+version = "0.3.3"
 description = "Air Quality Index in your menu bar or system tray, powered by aqicn.org"
 edition = "2021"
 license = "MIT"
