@@ -88,8 +88,11 @@ Shot from the running app at 2× — no mock-ups. The reading is live aqicn data
   forecast as a faint min–max band with a dashed daily mean, sharing one axis from yesterday to
   the day after tomorrow. The forecast already arrives as AQI — aqicn converts it with the same
   EPA table it uses for the reading — so the two are comparable without rescaling. It is drawn
-  only from now onwards, and the observed line breaks where the app was not running instead of
-  drawing straight over the gap. aqicn publishes no hourly history, so the past side starts empty
+  only from now onwards. The observed line follows the rhythm the station actually publishes at:
+  aqicn repeats a station's last measurement until a newer one lands, so a station that updates
+  every three hours must still read as a line rather than a row of dots. A jump far longer than
+  that rhythm — the app was closed, the lid was shut — is bridged by a faint dashed segment, so a
+  missing stretch stays visible and is never mistaken for measured data. aqicn publishes no hourly history, so the past side starts empty
   and fills in as the app runs (per station, kept 7 days, on disk).
   Hover a point to read its time and value.
 - **Location**: automatic (aqicn resolves it from your IP), a city or station name, or a

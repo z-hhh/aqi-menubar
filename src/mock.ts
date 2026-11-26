@@ -40,6 +40,23 @@ function baseConfig(): Config {
 const STATION = "Shanghai (上海)";
 
 /**
+ * A station that publishes every three hours, as many aqicn stations do: the
+ * API repeats the last measurement until a new one lands, so the cache gets a
+ * point every 3 h however often we poll. Four readings, no line to draw unless
+ * the chart tolerates this rhythm.
+ */
+function sparseHistory(aqi: number): Obs[] {
+  const now = Date.now();
+  const shift = [40, 28, 12, 0];
+  return shift.map((offset, i) => ({
+    station: STATION,
+    observedAt: Math.floor((now - (shift.length - 1 - i) * 3 * 3_600_000) / 1000),
+    aqi: Math.max(3, aqi + offset),
+    pm25: null,
+  }));
+}
+
+/**
  * A plausible day curve so the panel can be reviewed in a browser. Real
  * readings only accumulate while the app runs; this is never reached inside
  * the app.
@@ -120,7 +137,7 @@ export function sampleState(): AppState {
     platform: "macos",
     update: updateInfo(),
     installing: false,
-    history: mockHistory(aqi),
+    history: mode === "sparse" ? sparseHistory(aqi) : mockHistory(aqi),
     snapshot: {
       aqi,
       station: "Shanghai (上海)",

@@ -16,6 +16,9 @@ import type { AppState, Band, ForecastDay } from "./types";
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
+/** Longer than this and the jump is not a gap in a curve, it is two curves. */
+const BRIDGE_MAX = 24 * HOUR;
+
 const W = 312;
 const PLOT_TOP = 4;
 const PLOT_H = 84;
@@ -117,6 +120,26 @@ function segments(points: Point[], gapLimit: number): Point[][] {
   return out;
 }
 
+/**
+ * The spacing this data actually has, as the median of its own jumps.
+ *
+ * aqicn repeats a station's last measurement until a newer one lands, and the
+ * cache keys on the station's timestamp, so a station that publishes every
+ * three hours yields a point every three hours however often we poll. Counting
+ * that as "the app was closed" would turn every reading into an isolated dot.
+ */
+function medianGap(points: Point[]): number | null {
+  const gaps: number[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const gap = points[i].t - points[i - 1].t;
+    if (gap > 0) gaps.push(gap);
+  }
+  if (gaps.length === 0) return null;
+  gaps.sort((a, b) => a - b);
+  const mid = gaps.length >> 1;
+  return gaps.length % 2 === 1 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+}
+
 export default function TrendChart({ state }: { state: AppState }) {
   const { t, i18n } = useTranslation();
   const snapshot = state.snapshot;
@@ -171,12 +194,21 @@ export default function TrendChart({ state }: { state: AppState }) {
   const x = (ts: number) => PAD_L + ((ts - start) / (end - start)) * plotW;
   const y = (value: number) => PLOT_TOP + PLOT_H - (Math.min(value, yMax) / yMax) * PLOT_H;
 
-  const gapLimit = Math.max(3 * state.config.refreshMinutes * 60_000, 90 * 60_000);
-  const snapLimit = Math.max(gapLimit, 2 * HOUR);
-  const runs = segments(
-    observed.filter((p) => p.t >= start && p.t <= end),
-    gapLimit,
+  const visible = observed.filter((p) => p.t >= start && p.t <= end);
+  // Break the line only where a jump is out of rhythm with this data, not
+  // merely wider than the poll interval. The floor keeps a fast station's
+  // one-off hiccup from being bridged; the ceiling stops a day of sparse
+  // readings from being wired into one continuous-looking curve.
+  const cadence = medianGap(visible) ?? 0;
+  const gapLimit = Math.max(
+    3 * state.config.refreshMinutes * 60_000,
+    90 * 60_000,
+    Math.min(2.5 * cadence, 6 * HOUR),
   );
+  // Hovering may travel half a cadence to reach the reading that owns the
+  // pointer's time; past that the pointer is over a real hole.
+  const snapLimit = Math.max(90 * 60_000, cadence / 2 + 30 * 60_000);
+  const runs = segments(visible, gapLimit);
 
   const dayFormat = new Intl.DateTimeFormat(i18n.language, { month: "numeric", day: "numeric" });
   const stampFormat = new Intl.DateTimeFormat(i18n.language, {
@@ -369,6 +401,22 @@ export default function TrendChart({ state }: { state: AppState }) {
           </g>
 
           <line className="chart-now" x1={x(now)} x2={x(now)} y1={PLOT_TOP} y2={PLOT_TOP + PLOT_H} />
+
+          {runs.slice(1).map((run, i) => {
+            const from = runs[i][runs[i].length - 1];
+            const to = run[0];
+            if (to.t - from.t > BRIDGE_MAX) return null;
+            return (
+              <line
+                key={`b${from.t}`}
+                className="chart-bridge"
+                x1={x(from.t)}
+                y1={y(from.v)}
+                x2={x(to.t)}
+                y2={y(to.v)}
+              />
+            );
+          })}
 
           {runs.map((run) =>
             run.length === 1 ? (

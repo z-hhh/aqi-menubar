@@ -810,6 +810,14 @@ body.mock-preview #root {
   stroke-linecap: round;
 }
 
+.chart-bridge {
+  stroke: var(--fg);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 3;
+  stroke-linecap: round;
+  opacity: 0.4;
+}
+
 .chart-dot {
   fill: var(--fg);
 }
