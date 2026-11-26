@@ -68,9 +68,38 @@ pub fn dot_image(color: [u8; 3], size: u32, diameter: f32) -> Image<'static> {
     Image::new_owned(buf, size, size)
 }
 
+/// An empty image, used as the status item's icon when the dot is hidden.
+///
+/// AppKit puts a status item's title through its vibrancy compositor when the
+/// item carries no image at all. On a display that does not hold the menu bar
+/// focus that pushes the text a long way toward white: measured on a 1x probe
+/// display, magenta `#FF00FF` came out `#FF71FF` (44% white), and the same
+/// text on an item carrying any image -- even a fully transparent one -- only
+/// dimmed to ~60% opacity with its hue intact (`#FFD600` -> `#BDAD3B`). This
+/// placeholder keeps colourless items on the same path as the dot, so the
+/// level colour is only dimmed, never washed out.
+///
+/// The canvas is 1x18, not 1x1, because `tray-icon` scales every icon to an
+/// 18 pt height and derives the width from the aspect ratio: a 1x1 image would
+/// become 18 pt wide and leave a blank slot in front of the text. 1x18 keeps
+/// the whole thing 1 pt wide, which is the least the status button accepts.
+#[cfg(target_os = "macos")]
+pub fn transparent_icon() -> Image<'static> {
+    Image::new_owned(vec![0; 1 * 18 * 4], 1, 18)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn transparent_icon_is_present_but_empty() {
+        let img = transparent_icon();
+        // 18 tall so `tray-icon`'s 18 pt rescale makes it 1 pt wide, not 18.
+        assert_eq!((img.width(), img.height()), (1, 18));
+        assert!(img.rgba().iter().all(|b| *b == 0));
+    }
 
     #[test]
     fn colors_follow_the_epa_bands() {

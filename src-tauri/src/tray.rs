@@ -327,7 +327,7 @@ pub fn update(app: &AppHandle, snap: &Snapshot, display: &TrayDisplay, lang: &st
         if display.show_icon {
             let _ = tray.set_icon(Some(icons::dot_image(color, DOT_CANVAS, DOT_DIAMETER)));
         } else {
-            let _ = tray.set_icon(None::<tauri::image::Image>);
+            let _ = tray.set_icon(Some(icons::transparent_icon()));
         }
         let _ = tray.set_title(Some(text.title.as_str()));
         paint_title(&tray, &text.title, snap.aqi, display.color_text);
@@ -354,7 +354,7 @@ pub fn clear(app: &AppHandle, display: &TrayDisplay, _lang: &str) {
                 DOT_DIAMETER,
             )));
         } else {
-            let _ = tray.set_icon(None::<tauri::image::Image>);
+            let _ = tray.set_icon(Some(icons::transparent_icon()));
         }
         let _ = tray.set_title(Some("–"));
         paint_title(&tray, "–", None, false);
