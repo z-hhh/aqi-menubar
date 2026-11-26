@@ -108,5 +108,15 @@
     "installing": "安装中…",
     "later": "稍后",
     "failed": "更新失败：{{error}}"
+  },
+  "about": {
+    "title": "关于",
+    "name": "谁的空气",
+    "desc": "AQI Menubar · 菜单栏里的空气质量",
+    "version": "版本",
+    "repo": "GitHub 源码",
+    "site": "落地页",
+    "license": "MIT 许可",
+    "data": "aqicn.org 数据"
   }
 }

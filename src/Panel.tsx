@@ -21,6 +21,8 @@ export const TOKEN_URL = "https://aqicn.org/data-platform/token/";
 interface Props {
   state: AppState;
   onOpenSettings: (focusToken?: boolean) => void;
+  /** Open Settings scrolled to About — what the footer's version means. */
+  onOpenAbout: () => void;
 }
 
 /**
@@ -149,7 +151,7 @@ function UpdateBanner({ state }: { state: AppState }) {
   );
 }
 
-export default function Panel({ state, onOpenSettings }: Props) {
+export default function Panel({ state, onOpenSettings, onOpenAbout }: Props) {
   const { t, i18n } = useTranslation();
   const snapshot = state.snapshot;
 
@@ -278,7 +280,9 @@ export default function Panel({ state, onOpenSettings }: Props) {
         <button type="button" className="ghost" onClick={() => onOpenSettings()}>
           <SettingsIcon /> {t("panel.settings")}
         </button>
-        <span className="version">v{__APP_VERSION__}</span>
+        <button type="button" className="version" onClick={onOpenAbout} title={t("about.title")}>
+          v{__APP_VERSION__}
+        </button>
       </footer>
     </div>
   );

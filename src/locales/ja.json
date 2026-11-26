@@ -108,5 +108,15 @@
     "installing": "インストール中…",
     "later": "あとで",
     "failed": "アップデートに失敗しました: {{error}}"
+  },
+  "about": {
+    "title": "このアプリについて",
+    "name": "谁的空气",
+    "desc": "AQI Menubar · メニューバーの大気質",
+    "version": "バージョン",
+    "repo": "GitHub ソース",
+    "site": "ウェブサイト",
+    "license": "MIT ライセンス",
+    "data": "aqicn.org のデータ"
   }
 }

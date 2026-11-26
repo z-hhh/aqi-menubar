@@ -278,10 +278,20 @@ button {
 
 .version {
   flex: 0 0 auto;
+  background: none;
+  border: none;
+  padding: 0;
   font-size: 10px;
   letter-spacing: 0.2px;
   color: var(--muted);
   user-select: text;
+}
+
+/* The footer's version is the way into About, so it has to look tappable
+   without competing with 刷新 / 设置 next to it. */
+.version:hover {
+  color: var(--fg);
+  text-decoration: underline;
 }
 
 .ghost {
@@ -438,6 +448,39 @@ select:focus {
   font-size: 10.5px;
   color: var(--muted);
   line-height: 1.45;
+}
+
+/* ---- about ---- */
+
+/* Last block in Settings and the only one that is not a setting: a rule above
+   it says so without adding a section header of its own. */
+.about {
+  border-top: 1px solid var(--line);
+  padding-top: 11px;
+  /* Scrolls to the block's end; without this it lands flush on the panel's
+     edge and the link row looks clipped by the 14px bottom padding. */
+  scroll-margin-bottom: 14px;
+}
+
+.about-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.about-name {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+/* Two columns, so four links read as a block in every language instead of
+   leaving one item alone on a second row in English and Japanese. */
+.about-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 12px;
+  margin-top: 1px;
 }
 
 .segmented {

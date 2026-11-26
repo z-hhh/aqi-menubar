@@ -6,10 +6,19 @@ import { bridge } from "./bridge";
 import { TOKEN_URL } from "./Panel";
 import type { AppState, Location, SaveConfig, StationHit, TrayDisplay } from "./types";
 
+/** Everything the About block points at. Plain web links: the opener plugin
+ *  hands them to the system browser, so nothing here needs a backend call. */
+const REPO_URL = "https://github.com/z-hhh/aqi-menubar";
+const SITE_URL = "https://aqi.zhhh.fun";
+const LICENSE_URL = "https://github.com/z-hhh/aqi-menubar/blob/main/LICENSE";
+const DATA_URL = "https://aqicn.org";
+
 interface Props {
   state: AppState;
   /** Open with the token field focused (the onboarding "I have a token" path). */
   focusToken?: boolean;
+  /** Open scrolled to the About block (the version in the panel's footer). */
+  showAbout?: boolean;
   /** Called after each auto-save with the state the backend returned. */
   onSaved: (next: AppState) => void;
   onBack: () => void;
@@ -36,7 +45,13 @@ function signature(payload: SaveConfig): string {
   });
 }
 
-export default function Settings({ state, focusToken = false, onSaved, onBack }: Props) {
+export default function Settings({
+  state,
+  focusToken = false,
+  showAbout = false,
+  onSaved,
+  onBack,
+}: Props) {
   const { t } = useTranslation();
   const initial = state.config;
   const isWindows = state.platform === "windows";
@@ -68,6 +83,7 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   const [checked, setChecked] = useState<"idle" | "busy" | "none">("idle");
 
   const tokenRef = useRef<HTMLInputElement>(null);
+  const aboutRef = useRef<HTMLDivElement>(null);
   /** The token field has focus, so a freshly saved token may stay in it. */
   const tokenFocused = useRef(false);
   /** The token value the last successful save wrote, so leaving the field can
@@ -93,6 +109,12 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
   useEffect(() => {
     if (focusToken) tokenRef.current?.focus();
   }, [focusToken]);
+
+  // Reaching About from the panel's version means landing on it, not scrolling
+  // past every other setting to find it.
+  useEffect(() => {
+    if (showAbout) aboutRef.current?.scrollIntoView({ block: "end" });
+  }, [showAbout]);
 
   useEffect(() => {
     if (status !== "saved") return;
@@ -468,6 +490,32 @@ export default function Settings({ state, focusToken = false, onSaved, onBack }:
               : t("update.autoHint")}
         </span>
       </div>
+
+      <div className="field about" ref={aboutRef}>
+        <span className="label">{t("about.title")}</span>
+        <div className="about-head">
+          <span className="about-name">{t("about.name")}</span>
+          <span className="version" aria-label={`${t("about.version")} ${__APP_VERSION__}`}>
+            v{__APP_VERSION__}
+          </span>
+        </div>
+        <span className="hint">{t("about.desc")}</span>
+        <div className="about-links">
+          <button type="button" className="link" onClick={() => open(REPO_URL)}>
+            {t("about.repo")} ↗
+          </button>
+          <button type="button" className="link" onClick={() => open(SITE_URL)}>
+            {t("about.site")} ↗
+          </button>
+          <button type="button" className="link" onClick={() => open(LICENSE_URL)}>
+            {t("about.license")} ↗
+          </button>
+          <button type="button" className="link" onClick={() => open(DATA_URL)}>
+            {t("about.data")} ↗
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }

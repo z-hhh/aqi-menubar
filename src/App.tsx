@@ -12,6 +12,7 @@ export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [view, setView] = useState<View>("panel");
   const [focusToken, setFocusToken] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -66,9 +67,11 @@ export default function App() {
         <Settings
           state={state}
           focusToken={focusToken}
+          showAbout={showAbout}
           onSaved={(next) => setState(next)}
           onBack={() => {
             setFocusToken(false);
+            setShowAbout(false);
             setView("panel");
           }}
         />
@@ -77,6 +80,12 @@ export default function App() {
           state={state}
           onOpenSettings={(wantsToken) => {
             setFocusToken(Boolean(wantsToken));
+            setShowAbout(false);
+            setView("settings");
+          }}
+          onOpenAbout={() => {
+            setFocusToken(false);
+            setShowAbout(true);
             setView("settings");
           }}
         />
